@@ -35,7 +35,7 @@ La cobertura se calcula con la fórmula de `fundingStatus` del pivot (`fundedUnt
 
 Function tool con `strict: true`: `{ items: [{ workerId, totalAmount (entero) }], period: 900|3600|86400|604800|2592000, fundPercent: 25|50|100 }`. Usa las mismas opciones que `/payer/nuevo`.
 
-`toProposal()` (`lib/agent/proposal.ts`) valida que cada proveedor exista con rol `worker`, que no esté repetido, que haya entre 1 y 100 ítems y que los montos sean enteros positivos. Calcula `initialDeposit = floor(total × fundPercent / 100)`. Si la validación falla, el chat muestra "No pude armar la propuesta: <motivo>". No se hace un segundo turno con el modelo.
+`toProposal()` (`lib/agent/proposal.ts`) valida que cada proveedor exista con rol `worker`, que no esté repetido, que haya entre 1 y 100 ítems y que los montos sean enteros positivos. Calcula `initialDeposit = floor(total × fundPercent / 100)`. Además, cada precio tiene que figurar en lo que escribió el usuario (`amountsIn` reconoce "300.000", "300 mil", "300k" y "1,5 millones"). Si el precio es 0 o no figura, el chat pregunta "¿Cuál es el precio total en pesos del acuerdo con X?", porque el modelo barato tiende a inventarlo. Con cualquier otra falla de validación, el chat muestra "No pude armar la propuesta: <motivo>". No se hace un segundo turno con el modelo.
 
 ## Protocolo del stream
 
@@ -43,7 +43,7 @@ Function tool con `strict: true`: `{ items: [{ workerId, totalAmount (entero) }]
 
 ## Proveedor
 
-- SDK `openai` con Chat Completions en streaming. Se quitó `@anthropic-ai/sdk`.
+- SDK `openai` con Chat Completions en streaming. Se quitó `@anthropic-ai/sdk`. Para el cliente se pasa `reasoning_effort: "none"`, porque los modelos con razonamiento (por ejemplo `gpt-6-luna`, el elegido) rechazan function tools en Chat Completions.
 - `OPENAI_API_KEY` y `OPENAI_MODEL`. Si falta alguna, la ruta responde 503 y la UI muestra el mensaje. El modelo va en una variable para poder cambiarlo en Vercel sin commitear.
 - Si hay rate limit o un error 5xx, el mensaje es "El asistente está con mucha demanda…".
 
