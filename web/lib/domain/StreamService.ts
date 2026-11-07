@@ -1,9 +1,9 @@
 import type { StreamGateway } from "@/lib/chain/StreamGateway";
 import type { Repository } from "@/lib/db/Repository";
-import { addAmounts, compareAmounts, normalizeAmount, positiveAmount, subtractAmounts } from "./amounts";
+import { addAmounts, compareAmounts, normalizeAmount, positiveAmount } from "./amounts";
 import { DomainError, requireCondition } from "./errors";
 import type { Activity, ActivityKind, Amount, DemoUser, StreamView } from "./types";
-import { validatePeriod, withdrawableAt } from "./vesting";
+import { validatePeriod } from "./vesting";
 
 export type CreateInput = { payerId: string; items: { workerId: string; totalAmount: Amount; initialDeposit: Amount }[]; start: number; end: number };
 
@@ -98,8 +98,7 @@ export class StreamService {
       const to = destination === "wallet" ? user.address : user.beloAddress;
       requireCondition(to && /^0x[0-9a-fA-F]{40}$/.test(to) && !/^0x0{40}$/.test(to), "El destino no tiene una dirección válida configurada.");
       const value = positiveAmount(amount);
-      const stream = await this.gateway.getStream(id);
-      requireCondition(compareAmounts(value, withdrawableAt(stream, this.now())) <= 0, "El monto supera el saldo disponible.", 409);
+      // The gateway validates available funds against its authoritative clock/state.
       const result = await this.gateway.withdrawTo(user, id, to, value);
       await this.saveAfterTransaction(result.txHash, () => this.repo.recordActivity(this.activityRow(id, "withdraw", value, result.txHash, user.id)));
       return result;
@@ -115,8 +114,7 @@ export class StreamService {
       // Activity amount is the refund; kept remains in the mutation response.
       normalizeAmount(result.kept);
       normalizeAmount(result.refunded);
-      requireCondition(compareAmounts(result.refunded, subtractAmounts(stream.deposited, stream.withdrawn)) <= 0,
-        `La operación ${result.txHash} requiere reconciliación de sus valores.`, 503);
+      // A concurrent top-up can make the pre-transaction snapshot obsolete.
       await this.saveAfterTransaction(result.txHash, () => this.repo.recordActivity(this.activityRow(id, "cancel", result.refunded, result.txHash, user.id)));
       return result;
     });
