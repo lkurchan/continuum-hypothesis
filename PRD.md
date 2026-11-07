@@ -196,24 +196,25 @@ Regla general: cada módulo toca **solo sus carpetas**. Las interfaces de la sec
 - [x] Crear la branch `main`, scaffold de `web/` (Next.js, TypeScript, Tailwind, ESLint) y de `contracts/` (Foundry con OpenZeppelin).
 - [x] Escribir los tipos (8.1), la interfaz `StreamGateway` (8.2), los stubs de las rutas de la API (8.3) y `web/.env.example`.
 - [x] Preparar y validar la migración inicial de Supabase y el seed de los tres usuarios demo.
-- [ ] Crear el proyecto de Supabase y el de Vercel (Vercel linkeado al repo).
+- [x] Crear y validar Supabase: tablas, RPC, usuarios y wallets demo.
+- [x] Crear el proyecto de Vercel, linkeado al repo.
 - [x] Hacer el primer commit en `main`. A partir de acá, todos branchean.
 
-La base local está validada; los proyectos remotos quedan pendientes de conexión autenticada. Ver `docs/SETUP.md` para comandos, configuración de servicios y arranque de branches.
+La base local, Supabase remoto y el backend real en Vercel están validados. El deployment actual parte de `main`; la UI completa sigue pendiente de integrar. Ver `docs/SETUP.md` y `docs/VERCEL.md` para configuración y evidencia.
 
 ### Tareas operativas (cualquiera, **apenas arranca el día**: son las bloqueantes reales)
-- [ ] Pedir ARGt en Arbitrum a los mentores de Twin (o comprarlo con USDT0 en el pool de Curve). Conseguir lo suficiente para montos creíbles.
-- [ ] Conseguir ETH en Arbitrum para gas y repartirlo entre las wallets demo (deployer, pagador y trabajadores).
+- [x] Conseguir ARGt en Arbitrum: fondeo de 3371,33 ARGt verificado en la plataforma antes de B6.
+- [x] Conseguir ETH en Arbitrum para gas y repartirlo entre las wallets demo (deployer, pagador y trabajadores).
 - [ ] Confirmar con Belo o los mentores que una dirección de Belo recibe ARGt en Arbitrum, y anotar esa dirección.
 - [ ] Conseguir una API key de Anthropic.
-- [ ] Generar las wallets demo y cargar las claves en Vercel.
+- [x] Generar las wallets demo y cargar las claves en Vercel, solo en Production con acceso protegido.
 
 ### Módulo A — Contrato (`contracts/`)
 - [x] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
-- [ ] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
+- [x] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
 - [ ] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**. Publicar la dirección en el canal del equipo.
 - [x] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
-- [ ] A5. Después: ayudar a B con la integración y sembrar los streams para la demo.
+- [x] A5. Integración con B y primer seed real por API comprobados en B6. Renovar el horario del lote para el ensayo/pitch.
 
 ### Módulo B — Backend y chain (`web/lib/domain`, `web/lib/chain`, `web/lib/db`, `web/app/api/**`, `supabase/`)
 - [x] B1. `vesting.ts` con tests, espejo de la fórmula del contrato.
@@ -221,9 +222,9 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 - [x] B3. Migraciones de Supabase y seed de usuarios demo.
 - [x] B4. Rutas de la API contra el gateway y la base, con tests de la lógica de cada ruta.
 - [x] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
-- [ ] B6. Prueba de punta a punta en mainnet: el **primer hash real**, que se guarda para el README.
+- [x] B6. Prueba de punta a punta en mainnet: lote, top-up, retiro, cancelación y remanente; hashes en README y `docs/B6.md`.
 
-B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. La migración remota y B6 siguen pendientes de Supabase, contrato desplegado, credenciales y fondos. Ver `docs/BACKEND.md` y `docs/CI.md`.
+B1–B6 están implementados y verificados. El contrato está desplegado y se contrastó su bytecode. B6 ejecutó el flujo real por API con Supabase: depositó 2,2 ARGt, retiró 0,3 ARGt a worker1 y devolvió 0,9 ARGt al pagador; quedó 1 ARGt en el stream 2. Receipts, balances e historial por participante comprobados. El backend real también pasó las lecturas desde Vercel protegido, sin nuevos pagos. Ver `docs/B6.md`, `docs/VERCEL.md`, `docs/OPERATIONS.md`, `docs/BACKEND.md` y `docs/CI.md`. El destino Belo sigue pendiente.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
 - [x] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
@@ -241,10 +242,10 @@ B1–B5 están implementados y probados con demo local, proveedores simulados y 
 - [ ] D4b (prioridad baja). Reglas que ejecutan pagos con `withdrawTo` (`agent_rules`, botón "Ejecutar reglas de hoy") y una explicación por cada movimiento.
 
 ### Codex 1 y 2
-- [ ] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.
-- [ ] Script de seed de streams demo y modo mock con datos lindos.
-- [ ] Review de los PRs de A y B (seguridad del contrato y manejo de claves).
-- [ ] Configuración de Vercel y verificación del deploy.
+- [x] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.
+- [x] Script de seed de streams demo y modo mock con datos lindos. Seed real por API ejecutado en B6; preparar un horario nuevo para el próximo ensayo.
+- [x] Review de los PRs de A y B (seguridad del contrato y manejo de claves).
+- [x] Configuración de Vercel y verificación del backend real desplegado. Revalidar la presentación al integrar la UI.
 
 ## 10. Cronograma
 
