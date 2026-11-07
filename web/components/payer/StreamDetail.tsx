@@ -83,7 +83,7 @@ export function StreamDetail({ stream, workerName, now, onSelect }: { stream: St
         ))}
       </dl>
 
-      {status !== "canceled" && status !== "completed" && !confirming && (
+      {status !== "canceled" && (status !== "completed" || room > 0) && !confirming && (
         <div className="flex flex-col gap-2.5">
           {room > 0 && (
             <div className="flex gap-2">
@@ -96,7 +96,7 @@ export function StreamDetail({ stream, workerName, now, onSelect }: { stream: St
             </div>
           )}
           {value > room && <span className="text-xs text-danger">Máximo {money(room)}</span>}
-          <button type="button" onClick={() => { onSelect(); setConfirming(true); setTx(null); }} className={buttonStyles.danger}>Cancelar pago</button>
+          {status !== "completed" && <button type="button" onClick={() => { onSelect(); setConfirming(true); setTx(null); }} className={buttonStyles.danger}>Cancelar pago</button>}
         </div>
       )}
 

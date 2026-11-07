@@ -7,6 +7,7 @@ Integrar las herramientas de backend con las pantallas C/D, conservando ambos gr
 - Actualizar streams y actividad cada cinco segundos mientras la página está visible, al volver a ella y después de una operación. Evitar solicitudes periódicas superpuestas y resultados de efectos desmontados.
 - En un retiro repartido, mostrar el monto confirmado, el monto solicitado y cualquier fallo posterior. Nunca reintentar pagos automáticamente.
 - Mantener seleccionado el pago operado aunque cambie el orden de la lista al cancelar; su comprobante debe seguir visible.
+- Permitir recargar pagos cuyo período terminó si aún falta fondeo; el final del período no cancela la deuda. Los cancelados no admiten recarga.
 - Los escenarios prefijados de `/lab` solo se habilitan cuando la API confirmó `mock`. En `real` las vistas se mantienen disponibles, y las operaciones se hacen desde los formularios habituales con montos explícitos.
 - Rechazar mensajes de chat nulos, primitivos o arrays con HTTP 400; conservar errores sanitizados y el 503 cuando falta configuración del proveedor.
 
