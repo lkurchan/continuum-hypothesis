@@ -60,7 +60,7 @@ function Shell({ children, view = "inicio", onNavigate }: { children: React.Reac
             <span className="text-[17px] font-semibold tracking-[-0.03em]">continuum</span>
           </Link>
           <nav aria-label="Navegación principal" className="order-last flex w-full justify-center gap-1 sm:order-none sm:w-auto">
-            {([["inicio", "Inicio"], ["copiloto", "Copiloto"], ["contratos", "Contratos"]] as const).map(([id, label]) => (
+            {([["inicio", "Inicio"], ["contratos", "Contratos"], ["copiloto", "Copiloto"]] as const).map(([id, label]) => (
               <button key={id} type="button" aria-current={view === id ? "page" : undefined} onClick={() => onNavigate?.(id)}
                 className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium ${view === id ? "bg-ink text-white" : "text-muted hover:bg-surface"}`}>
                 {label}
@@ -166,13 +166,13 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
           <button type="button" className={`${ACTION_STYLE} max-w-[210px]`} onClick={() => setPanel("new")}><Icon name="plus" />Nuevo contrato</button>
         </div>
         <div className="overflow-hidden rounded-2xl border border-line bg-white">
-          <div className="hidden grid-cols-[minmax(0,2fr)_100px_minmax(140px,1fr)_100px_24px] gap-6 border-b border-line bg-page px-6 py-3 text-xs font-medium text-muted md:grid"><span>Empresa / servicio</span><span>Tipo</span><span className="text-right">Importe</span><span className="text-center">Estado</span><span /></div>
+          <div className="hidden grid-cols-[repeat(4,minmax(0,1fr))_20px] gap-6 border-b border-line bg-page px-6 py-3 text-xs font-medium text-muted md:grid"><span>Empresa / servicio</span><span>Tipo</span><span>Importe</span><span>Estado</span><span /></div>
           {contracts.map(c => <button key={c.name + c.service} type="button" onClick={() => setDetail(c)}
-            className="grid w-full grid-cols-[minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-line-soft px-4 py-5 text-left transition hover:bg-page last:border-0 md:grid-cols-[minmax(0,2fr)_100px_minmax(140px,1fr)_100px_24px] md:gap-6 md:px-6">
+            className="grid w-full grid-cols-[minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-line-soft px-4 py-5 text-left transition hover:bg-page last:border-0 md:grid-cols-[repeat(4,minmax(0,1fr))_20px] md:gap-6 md:px-6">
             <span className="min-w-0"><span className="block truncate text-base font-semibold">{c.name}</span><span className="mt-1 block truncate text-xs text-muted">{c.service}</span><span className="mt-2 block text-xs text-muted md:hidden">{c.direction === "in" ? "Cobrás" : "Pagás"} · En curso</span></span>
-            <span className="hidden text-sm text-muted md:block">{c.direction === "in" ? "Cobrás" : "Pagás"}</span>
-            <span className="text-right"><span className="tnum block text-base font-semibold">{money(c.monthly)}</span><span className="text-xs text-muted">{c.period ? durationLabel(c.period) : "por mes"}</span></span>
-            <span className="hidden rounded-full bg-surface px-3 py-1.5 text-center text-xs text-muted md:block">En curso</span>
+            <span className="hidden justify-start md:flex"><span className={`inline-flex min-w-[78px] items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-semibold ${c.direction === "in" ? "border-ink bg-ink text-white" : "border-line bg-white text-ink-2"}`}>{c.direction === "in" ? "Cobrás" : "Pagás"}</span></span>
+            <span className="text-right md:text-left"><span className="tnum block text-base font-semibold">{money(c.monthly)}</span><span className="text-xs text-muted">{c.period ? durationLabel(c.period) : "por mes"}</span></span>
+            <span className="hidden justify-start md:flex"><span className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-muted">En curso</span></span>
             <Icon name="chevron" size={16} className="text-subtle" />
           </button>)}
         </div>
@@ -189,7 +189,9 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
         <dl className="space-y-4 text-sm"><div className="flex justify-between"><dt className="text-muted">Devengado</dt><dd className="tnum font-semibold">{money(detail.earned, 2)}</dd></div><div className="flex justify-between"><dt className="text-muted">Duración</dt><dd>{detail.period ? durationLabel(detail.period) : "Mensual"}</dd></div><div className="flex justify-between"><dt className="text-muted">Fondeo</dt><dd>{detail.deposited === undefined ? "100%" : money(detail.deposited, 2)}</dd></div></dl>
         <button className={ACTION_STYLE} type="button" onClick={() => { setPanel(detail.direction === "in" ? "withdraw" : "new"); setDetail(null); }}>{detail.direction === "in" ? "Retirar" : "Nuevo contrato"}</button>
       </Drawer>}
-      {panel === "new" && <NewContract roles={roles} onClose={() => setPanel(null)} onCreated={c => { setCreated(x => [...x, c]); refresh(); }} />}
+      {panel === "new" && <NewContract roles={roles} onClose={() => setPanel(null)}
+        onCreated={c => { setCreated(x => [...x, c]); refresh(); }}
+        onViewContract={c => { setPanel(null); setView("contratos"); setDetail(c); }} />}
       {panel === "withdraw" && <Withdraw users={users} receiver={withdrawalReceiver(roles, payer.streams ?? [], now)} now={now} onClose={() => setPanel(null)} onDone={refresh} />}
     </Shell>
   );
@@ -320,8 +322,8 @@ function choice(on: boolean) {
   return on ? "border-2 border-ink" : "border border-line";
 }
 
-function NewContract({ roles, onClose, onCreated }: {
-  roles: DemoRoles; onClose: () => void; onCreated: (contract: DisplayContract) => void;
+function NewContract({ roles, onClose, onCreated, onViewContract }: {
+  roles: DemoRoles; onClose: () => void; onCreated: (contract: DisplayContract) => void; onViewContract: (contract: DisplayContract) => void;
 }) {
   const now = useNow(1000);
   const [providerId, setProviderId] = useState(roles.providers[0].id);
@@ -332,7 +334,7 @@ function NewContract({ roles, onClose, onCreated }: {
   const [unit, setUnit] = useState<DurationUnit>("days");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ ids: string[]; hash: string } | null>(null);
+  const [result, setResult] = useState<{ ids: string[]; hash: string; contract: DisplayContract } | null>(null);
   const provider = roles.providers.find(u => u.id === providerId) ?? roles.providers[0];
   const terms = contractTerms(amountText, depositText, percent, duration, unit);
   const fee = feeFor(terms?.initialDeposit ?? "0");
@@ -346,8 +348,9 @@ function NewContract({ roles, onClose, onCreated }: {
       const start = Math.floor(now);
       const { txHash, streamIds } = await api.create(roles.payer.id,
         [{ workerId: provider.id, totalAmount: terms.totalAmount, initialDeposit: terms.initialDeposit }], start, start + terms.seconds);
-      setResult({ ids: streamIds, hash: txHash });
-      onCreated({ name: provider.name, service: `Contrato #${streamIds.join(", #")} · ${durationLabel(terms.seconds)}`, monthly: Number(terms.totalAmount), earned: 0, direction: "out", period: terms.seconds, deposited: Number(terms.initialDeposit) });
+      const contract: DisplayContract = { name: provider.name, service: `Contrato #${streamIds.join(", #")} · ${durationLabel(terms.seconds)}`, monthly: Number(terms.totalAmount), earned: 0, direction: "out", period: terms.seconds, deposited: Number(terms.initialDeposit) };
+      setResult({ ids: streamIds, hash: txHash, contract });
+      onCreated(contract);
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   };
@@ -355,7 +358,7 @@ function NewContract({ roles, onClose, onCreated }: {
   const field = "h-12 min-w-0 rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-ink disabled:opacity-50";
   return <Drawer title="Nuevo contrato" onClose={() => { if (!busy) onClose(); }}>
     {result ? <Done title={`Contrato #${result.ids.join(", #")}`} subtitle={`${money(terms?.totalAmount ?? "0")} en servicios · ${compactMoney(terms?.initialDeposit ?? "0")} depositados`}
-      hashes={[result.hash]} onClose={onClose} action="Ver contrato" /> : <div className="flex flex-col gap-5">
+      hashes={[result.hash]} onClose={() => onViewContract(result.contract)} action="Ver contrato" /> : <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2"><label htmlFor="provider" className="text-sm font-semibold">Pagás a</label>
         <select style={SELECT_ARROW} id="provider" value={providerId} onChange={e => setProviderId(e.target.value)} disabled={busy} className={`${field} ${SELECT_STYLE}`}>
           {roles.providers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -474,18 +477,10 @@ function WithdrawalAccount({ receiver, workers, onSelect, now, onClose, onDone }
                 className="tnum min-w-0 grow bg-transparent text-[22px] font-medium outline-none" />
               <span className="text-xs text-subtle">ARGt</span>
             </div>
-            <div className="flex gap-2">
-              {([0.1, 0.25, 1] as const).map((v) => {
-                const on = v === amount && v > 0;
-                return (
-                  <button key={v} type="button" aria-pressed={on} disabled={busy || v > maxAmount} onClick={() => setAmountText(v.toFixed(2))}
-                    className={`h-10 flex-1 rounded-full border text-sm font-medium disabled:opacity-40 ${on ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>{money(v, 2)}</button>
-                );
-              })}
-            </div>
+
           </div>
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2.5 text-sm font-semibold">A</legend>
+            <legend className="mb-2.5 text-sm font-semibold">Destino</legend>
             {([["wallet", "Tu wallet", receiver.address], ["belo", "Cuenta Belo", receiver.beloAddress]] as const).map(([id, label, address]) => (
               <button key={id} type="button" aria-pressed={destination === id} disabled={busy || !address} onClick={() => setDestination(id)}
                 className={`flex min-h-[60px] flex-col justify-center gap-0.5 rounded-[14px] bg-white px-3.5 py-2.5 text-left disabled:opacity-40 ${choice(destination === id)}`}>
