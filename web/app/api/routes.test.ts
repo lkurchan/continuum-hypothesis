@@ -36,7 +36,8 @@ describe("HTTP contract", () => {
     expect(result.txHash).toMatch(/^mock:/);
     expect((await topup(post("streams/2/topup", { userId: "platform", amount: "60" }), context("2"))).status).toBe(200);
     expect((await withdraw(post("streams/2/withdraw", { userId: "worker1", amount: "20", destination: "belo" }), context("2"))).status).toBe(200);
-    expect(await backend.gateway.balanceOf(`0x${"4".repeat(40)}`)).toBe("20");
+    expect(await backend.gateway.balanceOf("0x5d474d0744284a72afbc4032fd001de50ea72b7c")).toBe("20");
+    expect(await backend.gateway.balanceOf(`0x${"4".repeat(40)}`)).toBe("0");
     expect(await (await cancel(post("streams/2/cancel?userId=platform"), context("2"))).json()).toMatchObject({ refunded: "30", kept: "50" });
     expect((await withdraw(post("streams/2/withdraw?userId=worker1", { amount: "30", destination: "wallet" }), context("2"))).status).toBe(200);
     const list = await (await streams(get("streams?userId=worker1"))).json();

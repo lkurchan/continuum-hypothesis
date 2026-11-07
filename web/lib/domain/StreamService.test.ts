@@ -121,3 +121,36 @@ describe("Continuum fee (0.05%)", () => {
       expect.objectContaining({ kind: "fee", amount: "50", txHash: result.feeTxHash, note: expect.stringContaining("Comisión Continuum 0,05%") })]));
   });
 });
+
+describe("fixed Belo destination for demo receivers", () => {
+  const belo = "0x5d474d0744284a72afbc4032fd001de50ea72b7c";
+  it.each(["mock", "real"] as const)("uses the displayed destination in %s, preserving wallet withdrawals", async mode => {
+    const { gateway } = fixture();
+    const ana: DemoUser = { ...worker, id: "worker1" };
+    const martin: DemoUser = { ...worker, id: "worker2", address: `0x${"3".repeat(40)}`, beloAddress: `0x${"5".repeat(40)}` };
+    const repo = new MemoryRepository([payer, ana, martin], [ana, martin].map((u, i) => ({
+      id: String(i + 1), payerId: payer.id, workerId: u.id, createdTx: txHash, createdAt: new Date(0).toISOString(),
+    })));
+    const service = new StreamService(gateway, repo, mode);
+    const users = await service.users();
+    for (const [i, u] of [ana, martin].entries()) {
+      const displayed = users.find(row => row.id === u.id)!;
+      expect(displayed.beloAddress).toBe(belo);
+      expect(displayed.address).toBe(u.address);
+      await service.withdraw(String(i + 1), u.id, "0.1", "belo");
+      expect(gateway.withdrawTo).toHaveBeenLastCalledWith(displayed, String(i + 1), belo, "0.1");
+      await service.withdraw(String(i + 1), u.id, "0.1", "wallet");
+      expect(gateway.withdrawTo).toHaveBeenLastCalledWith(displayed, String(i + 1), u.address, "0.1");
+    }
+    expect(await repo.user(ana.id)).toEqual(ana);
+    expect(await repo.user(martin.id)).toEqual(martin);
+    expect(users.find(u => u.id === payer.id)).toEqual(payer);
+  });
+
+  it("does not replace destinations for other users or bypass ownership", async () => {
+    const { service, gateway } = fixture();
+    await expect(service.withdraw("1", worker.id, "0.1", "belo")).rejects.toThrow("dirección válida");
+    await expect(service.withdraw("1", payer.id, "0.1", "belo")).rejects.toThrow("permiso");
+    expect(gateway.withdrawTo).not.toHaveBeenCalled();
+  });
+});
