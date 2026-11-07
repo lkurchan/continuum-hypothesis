@@ -15,7 +15,7 @@ export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?:
   );
 }
 
-const buttonBase = "inline-flex items-center justify-center gap-2 font-semibold tracking-[-0.01em] transition active:scale-[.98] disabled:active:scale-100";
+const buttonBase = "inline-flex items-center justify-center gap-2 font-semibold tracking-[-0.01em] transition-transform active:scale-[.98] disabled:active:scale-100";
 export const buttonStyles = {
   primary: `${buttonBase} h-14 rounded-2xl bg-ink px-7 text-base text-white disabled:bg-track disabled:text-subtle`,
   secondary: `${buttonBase} h-14 rounded-2xl border border-line bg-white px-6 text-base text-ink`,
