@@ -71,7 +71,7 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 | Wallets | **Custodiales**: usuarios demo fijos, con una clave privada por usuario en variables de entorno. Cada wallet necesita algo de ETH en Arbitrum para gas |
 | Auth | Selector de usuario demo ("Entrar como…"), sin signup |
 | Base | **Supabase** (Postgres): usuarios, metadata de streams, actividad y reglas del agente |
-| IA | Claude vía **Vercel AI SDK** (tool calling). Hace falta una API key de Anthropic |
+| IA | Claude (`claude-opus-5-5`, effort `low`) vía el **SDK oficial de Anthropic** (`@anthropic-ai/sdk`) con streaming. Por ahora es un chat sin herramientas: el servidor le pasa los saldos ya calculados. Hace falta `ANTHROPIC_API_KEY` |
 | Deploy | Vercel |
 | Dev local | `anvil --fork-url <arbitrum RPC>` con `deal` de ARGt, o `MockERC20` si `deal` falla con el proxy |
 
@@ -226,18 +226,19 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. La migración remota y B6 siguen pendientes de Supabase, contrato desplegado, credenciales y fondos. Ver `docs/BACKEND.md` y `docs/CI.md`.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
-- [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
-- [ ] C2. Selector de usuario demo (pantalla de entrada).
-- [ ] C3. Dashboard del pagador: trabajadores, streams activos, total fondeado y devengado.
-- [ ] C4. Flujo "pagar a N trabajadores": crear en lote con fondeo inicial parcial.
-- [ ] C5. Acciones por stream (top-up y cancelar) con feedback de la transacción y link a Arbiscan.
+- [x] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
+- [x] C2. Selector de usuario demo (pantalla de entrada).
+- [x] C3. Dashboard del pagador: trabajadores, streams activos, total fondeado y devengado.
+- [x] C4. Flujo "pagar a N trabajadores": crear en lote con fondeo inicial parcial.
+- [x] C5. Acciones por stream (top-up y cancelar) con feedback de la transacción y link a Arbiscan.
 
 ### Módulo D — UI del trabajador y agente (`web/app/(worker)/**`, `web/components/worker/**`, `web/lib/agent/**`, `web/app/api/agent/**`)
-- [ ] D0. Layout propio de `(worker)` siguiendo las reglas de 6.1, más la PWA liviana (`app/manifest.ts` y los íconos del diseño). Verificar que se instala en Android y en iPhone y que abre a pantalla completa en `/worker`.
-- [ ] D1. Home del trabajador con **el contador en tiempo real como protagonista**, usando `vestedAt` cada frame o cada 100 ms.
-- [ ] D2. Flujo de retiro: monto, destino (wallet o Belo), confirmación, hash y link a Arbiscan.
-- [ ] D3. Historial de actividad.
-- [ ] D4 (prioridad baja). Agente con el AI SDK y herramientas `getBalance`, `withdrawTo` y `createRule`. Las reglas se guardan en `agent_rules` y se ejecutan con un botón "Ejecutar reglas de hoy" (sin cron), con una explicación por cada movimiento.
+- [ ] D0. Layout propio de `(worker)` siguiendo las reglas de 6.1, más la PWA liviana (`app/manifest.ts` y los íconos del diseño). Verificar que se instala en Android y en iPhone y que abre a pantalla completa en `/worker`. Layout, navegación y manifest listos; falta verificar la instalación en celulares reales y los íconos PNG.
+- [x] D1. Home del trabajador con **el contador en tiempo real como protagonista**, usando `vestedAt` cada frame o cada 100 ms.
+- [x] D2. Flujo de retiro: monto, destino (wallet o Belo), confirmación, hash y link a Arbiscan.
+- [x] D3. Historial de actividad.
+- [x] D4a. Copiloto como chat (`/worker/copiloto` y `POST /api/agent/chat`): responde con los saldos del trabajador, no mueve plata.
+- [ ] D4b (prioridad baja). Reglas que ejecutan pagos con `withdrawTo` (`agent_rules`, botón "Ejecutar reglas de hoy") y una explicación por cada movimiento.
 
 ### Codex 1 y 2
 - [ ] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.
