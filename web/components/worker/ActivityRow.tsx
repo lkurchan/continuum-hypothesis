@@ -1,4 +1,4 @@
-import { money, when } from "@/components/ui/format";
+import { isOnchain, money, when } from "@/components/ui/format";
 import { Hash, Icon } from "@/components/ui/kit";
 import type { Activity } from "@/lib/domain/types";
 
@@ -32,7 +32,7 @@ export function ActivityRow({ activity, payerName, showHash = false, i = 0 }: { 
         <span className="truncate text-sm font-medium">{d.title}</span>
         <span className="flex items-center gap-1.5 text-xs text-subtle">
           {when(activity.createdAt)}
-          {showHash && <><span aria-hidden="true">·</span><Hash hash={activity.txHash} /></>}
+          {showHash && isOnchain(activity.txHash) && <><span aria-hidden="true">·</span><Hash hash={activity.txHash} /></>}
         </span>
       </span>
       <span className={`tnum whitespace-nowrap text-sm font-semibold ${t.amount}`}>
