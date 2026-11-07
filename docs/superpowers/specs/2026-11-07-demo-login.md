@@ -4,7 +4,7 @@
 
 Acceder a la demo real desde el dominio de producción sin una cuenta de Vercel. Una clave compartida de alta entropía autoriza al operador a usar los tres usuarios demo; no es un sistema de cuentas individuales ni signup.
 
-Esta entrega implementa solo el backend y Proxy. Gio implementa `/login`, logout y manejo de 401 en la UI. No retirar Vercel Authentication hasta integrar y probar esa pantalla.
+El backend y Proxy se integraron primero. La continuación incorpora `/login`, logout y recuperación de sesión vencida, reutilizando los estilos existentes. No retirar Vercel Authentication hasta integrar y probar esa pantalla.
 
 ## Reglas
 
@@ -18,3 +18,9 @@ Esta entrega implementa solo el backend y Proxy. Gio implementa `/login`, logout
 ## Validación
 
 Tests de sesión válida, inválida, expirada, firma/rol incorrectos, cookie segura, CSRF, hash inválido, real sin configuración y bloqueo de todas las rutas de pagos antes de llamar al backend. Smoke HTTP del build: acceso anónimo bloqueado, clave incorrecta, login, lectura autorizada y logout. Chrome: login/logout y acceso al selector. En Production solo lecturas; no enviar pagos para validar autenticación.
+
+## Pantalla de acceso
+
+`/login` es pública y solicita la clave del equipo mediante un campo password. Lee el estado de sesión y muestra errores de configuración, clave incorrecta y límite de intentos. Envía JSON al endpoint existente, sin persistir la clave ni la sesión en almacenamiento del navegador. Tras el login navega completamente al destino interno validado por el servidor.
+
+Con sesión vigente ofrece continuar y cerrar sesión. Logout elimina la cookie y navega a `/login`, descartando estado de la página. Las APIs de datos y el chat redirigen al login cuando reciben 401; no reintentan pagos ni mensajes. El resto de las pantallas conserva su diseño.

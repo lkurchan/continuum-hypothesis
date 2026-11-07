@@ -48,6 +48,8 @@ try {
   }
   const page = await fetch(origin + "/worker", { redirect: "manual" });
   ensure(page.status === 307 && new URL(page.headers.get("location"), origin).pathname === "/login", "La página no redirige al login.");
+  const loginPage = await fetch(origin + "/login?next=/payer/asistente");
+  ensure(loginPage.status === 200 && (await loginPage.text()).includes("Ingresá a la demo"), "La pantalla de login no está disponible.");
   const login = (value, requestOrigin = origin) => fetch(origin + "/api/auth/login", { method: "POST", headers: { "content-type": "application/json", origin: requestOrigin }, body: JSON.stringify({ password: value, next: "//evil.example" }) });
   ensure((await login(password, "https://evil.example")).status === 403, "Login permitió otro origen.");
   const wrong = await login("incorrect-password");

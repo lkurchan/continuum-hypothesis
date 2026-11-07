@@ -2,7 +2,7 @@
 
 Acceso de operador mediante una clave compartida del equipo. Una sesión permite usar los tres usuarios demo y realizar pagos reales. No hay cuentas individuales ni registro. Las wallets continúan exclusivamente en servidor.
 
-## Contrato para Gio
+## Contrato del login
 
 Todas las llamadas usan el mismo origen y cookies normales de `fetch` (no guardar tokens en localStorage).
 
@@ -12,7 +12,7 @@ Todas las llamadas usan el mismo origen y cookies normales de `fetch` (no guarda
 | `GET /api/auth/session` | Sin body | 200 `{ "required": true, "authenticated": true/false }`; en mock sin claves `required` es false |
 | `POST /api/auth/logout` | Sin body | 200 `{ "loggedOut": true }` y cookie vencida. Navegar completamente a `/login` y limpiar estado de datos de la UI |
 
-`/login` es público y **lo implementa Gio**. Proxy redirige allí páginas privadas con `?next=/ruta`. La UI puede pasar ese `next` al login; el backend solo acepta rutas internas conocidas. No hay redirecciones a URLs externas.
+`/login` es público y contiene el formulario de acceso. Proxy redirige allí páginas privadas con `?next=/ruta`. La pantalla pasa ese `next` al login; el backend solo acepta rutas internas conocidas. No hay redirecciones a URLs externas. Con sesión vigente, `/login` ofrece continuar o cerrar sesión. Las llamadas de datos y chat vuelven al login ante un 401 sin repetir la operación.
 
 Errores JSON `{ "error": "mensaje" }`: 401 clave incorrecta/sesión ausente, 403 origen inválido, 400 entrada inválida, 413 cuerpo excesivo, 429 demasiados intentos (Retry-After 300), 503 configuración incompleta. Si cualquier API de la app devuelve 401, llevar al login sin reintentar la operación de pago. Un 503 no equivale a una operación fallida: conservar el manejo existente de transacciones confirmadas con errores de historial.
 
@@ -29,7 +29,7 @@ En `real`, faltar una variable o tener formato inválido **bloquea** páginas pr
 
 ## Paso a dominio público
 
-Esta entrega es solo backend. **Mantener Vercel Authentication / All Deployments hasta integrar `/login`, configurar las dos variables y probar el acceso de la app.** Integrar el backend real sin esos requisitos cortaría el acceso de la demo actual.
+La pantalla y el backend están integrados. **Mantener Vercel Authentication / All Deployments hasta configurar las dos variables y probar el acceso de la app.** El modo real sin esos valores bloquea datos y pagos con 503.
 
 Después de las pruebas, seleccionar **Standard Protection**: el dominio de producción puede abrirse sin Vercel y la app exige su propia sesión. Los previews y URLs de deployments antiguos deben seguir protegidos porque los antiguos no incluyen este guard. No desactivar toda la protección del proyecto.
 
