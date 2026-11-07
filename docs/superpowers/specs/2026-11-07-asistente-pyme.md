@@ -77,3 +77,7 @@ Si OpenAI falla en vivo, el mismo acuerdo se crea desde `/payer/nuevo` y la cobe
 El chat mantiene la sesión de operador y el control de origen antes de acceder al backend o a OpenAI. La ruta de reputación integrada en paralelo también valida la sesión dentro de su handler. El login admite `/payer/asistente` como destino interno.
 
 Las pruebas de streaming usan un proveedor simulado: texto para ambos roles, argumentos de herramienta fragmentados, propuesta válida sin movimientos de fondos, precio inventado y errores del proveedor sin filtrar detalles. Si el modelo escribió texto pero la propuesta necesita un precio, se agrega siempre la pregunta de aclaración; no se oculta por haber enviado texto previamente.
+
+## Diagnóstico del proveedor
+
+Los errores de OpenAI se registran solo con nombre, estado HTTP, código y request id. No se registran claves, prompts, mensajes ni cuerpos de error. Las variables de proveedor se normalizan quitando espacios y saltos de línea exteriores, frecuentes al pegarlas en el deploy. La respuesta al usuario conserva el error seguro.

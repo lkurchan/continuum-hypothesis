@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import OpenAI from "openai";
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
-const { complete } = vi.hoisted(() => ({ complete: vi.fn() }));
+const { complete, clientOptions } = vi.hoisted(() => ({ complete: vi.fn(), clientOptions: vi.fn() }));
 vi.mock("openai", async (original) => {
   const sdk = await original<typeof import("openai")>();
   return { ...sdk, default: class extends sdk.default {
-    constructor() {
+    constructor(options?: { apiKey?: string }) {
       super({ apiKey: "test-only" });
+      clientOptions(options);
       this.chat.completions.create = complete;
     }
   } };
@@ -24,13 +25,15 @@ const request = (messages: unknown, userId = "worker1") => new Request("http://l
 beforeEach(() => {
   backend = createDemoBackend(() => 1000);
   complete.mockReset();
+  clientOptions.mockReset();
+  vi.spyOn(console, "error").mockImplementation(() => {});
   vi.stubEnv("CHAIN_MODE", "mock");
   vi.stubEnv("DEMO_AUTH_PASSWORD_HASH", "");
   vi.stubEnv("DEMO_AUTH_SECRET", "");
   vi.stubEnv("OPENAI_API_KEY", "");
   vi.stubEnv("OPENAI_MODEL", "test-model");
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 it.each([null, 1, "message", [], {}, { role: "user", content: "" }])("rejects malformed message entries (%j) without a provider call", async (entry) => {
   const result = await POST(request([entry]));
@@ -77,6 +80,15 @@ it.each(["worker1", "platform"])("streams account context for %s without moving 
   expect(await backend.service.activity("platform")).toEqual(before);
 });
 
+it("normalizes pasted provider variables before using them", async () => {
+  provider({ content: "Listo." });
+  vi.stubEnv("OPENAI_MODEL", " test-model\n");
+  vi.stubEnv("OPENAI_API_KEY", " test-only\n");
+  expect(await (await POST(request([{ role: "user", content: "Hola" }]))).text()).toBe("Listo.");
+  expect(clientOptions).toHaveBeenCalledWith({ apiKey: "test-only" });
+  expect(complete.mock.calls[0][0].model).toBe("test-model");
+});
+
 it("assembles tool fragments into a validated proposal without executing it", async () => {
   const before = await backend.service.streams("platform");
   const args = JSON.stringify({ items: [{ workerId: "worker1", totalAmount: 100 }], period: 900, fundPercent: 50 });
@@ -109,4 +121,6 @@ it.each([
   const text = await (await POST(request([{ role: "user", content: "Hola" }]))).text();
   expect(text).toContain(expected);
   expect(text).not.toContain("private-provider-detail");
+  expect(console.error).toHaveBeenCalledWith("chat_provider_error", expect.objectContaining({ name: expect.any(String) }));
+  expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toMatch(/private-provider-detail|test-only/);
 });
