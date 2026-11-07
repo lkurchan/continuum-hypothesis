@@ -7,7 +7,7 @@ import { redirectToLogin } from "@/lib/auth/client";
 export type ChatMessage = { role: "user" | "assistant"; content: string; proposal?: Proposal };
 
 /** Streams /api/agent/chat; a client reply may end with a proposal after PROPOSAL_SEPARATOR. */
-export function useChat(userId: string | undefined) {
+export function useChat(userId: string | undefined, scenario?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -27,7 +27,10 @@ export function useChat(userId: string | undefined) {
       const response = await fetch("/api/agent/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, messages: history.filter((m) => m.content).map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({ userId, messages: [
+          ...(scenario ? [{ role: "user", content: scenario }] : []),
+          ...history.filter((m) => m.content).map(({ role, content }) => ({ role, content })),
+        ] }),
       });
       if (response.status === 401) { redirectToLogin(); return; }
       if (!response.ok || !response.body) {

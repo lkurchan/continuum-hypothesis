@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/ui/api";
 import {
-  clock, dateLabel, durationLabel, groupWhole, initials, isOnchain, liveAvailable, liveParts, liveVested, money,
-  parseWhole, ratePerSecond,
+  clock, dateLabel, durationLabel, initials, isOnchain, liveParts, money,
 } from "@/components/ui/format";
 import { useAccount, useNow } from "@/components/ui/hooks";
 import { ErrorNote, Hash, Icon, MockNotice, NetworkChip } from "@/components/ui/kit";
@@ -14,26 +13,17 @@ import type { Activity, DemoUser, StreamView } from "@/lib/domain/types";
 import { addAmounts } from "@/lib/domain/amounts";
 import { feeFor } from "@/lib/domain/fees";
 import { presentationAt } from "@/lib/demo/presentation";
+import { contractTerms, type DurationUnit } from "@/lib/demo/contract-form";
+import { Bubble, Typing, useChat } from "@/components/ui/chat";
+import { PayerProvider } from "@/components/payer/PayerContext";
+import { ProposalCard } from "@/components/payer/ProposalCard";
 
 // Presentation name of the composed demo account (payer + receiver identities).
 const ACCOUNT_NAME = "Nodo Software SRL";
-const DURATIONS = [
-  { id: "15m", label: "15 min · demo", seconds: 900 },
-  { id: "30d", label: "1 mes", seconds: 30 * 86400 },
-] as const;
-
+type View = "inicio" | "copiloto" | "contratos";
+type DisplayContract = { name: string; service: string; monthly: number; earned: number; direction: "in" | "out"; period?: number; deposited?: number };
+const ACTION_STYLE = "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-celeste px-5 text-[15px] font-semibold text-ink transition hover:brightness-95 disabled:opacity-40";
 const sum = <T,>(list: T[], f: (x: T) => number) => list.reduce((a, x) => a + f(x), 0);
-const streaming = (s: StreamView, now: number) => !s.canceledAt && now >= s.start && now < s.end;
-
-function untilLabel(s: StreamView, now: number): string {
-  if (s.canceledAt) return "Cancelado";
-  if (now >= s.end) return "Completado";
-  if (now < s.start) return `Empieza ${clock(s.start)}`;
-  const fundedUntil = s.start + (Number(s.deposited) / Number(s.totalAmount)) * (s.end - s.start);
-  if (fundedUntil < s.end) return `Fondeado hasta ${s.end - s.start > 86400 ? dateLabel(fundedUntil) : clock(fundedUntil)}`;
-  if (s.end - now < 3600) return `${Math.max(1, Math.ceil((s.end - now) / 60))} min restantes`;
-  return "Período fondeado";
-}
 
 export default function DemoAccountPage() {
   const [users, setUsers] = useState<DemoUser[] | null>(null);
@@ -49,7 +39,7 @@ export default function DemoAccountPage() {
   return <Account roles={roles} users={users} />;
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, view = "inicio", onNavigate }: { children: React.ReactNode; view?: View; onNavigate?: (view: View) => void }) {
   return (
     <div className="min-h-dvh bg-page">
       <header className="border-b border-line bg-white">
@@ -62,12 +52,19 @@ function Shell({ children }: { children: React.ReactNode }) {
             </svg>
             <span className="text-[17px] font-semibold tracking-[-0.03em]">continuum</span>
           </Link>
+          <nav aria-label="Navegación principal" className="order-last flex w-full justify-center gap-1 sm:order-none sm:w-auto">
+            {([["inicio", "Inicio", "home"], ["copiloto", "Copiloto", "chat"], ["contratos", "Contratos", "list"]] as const).map(([id, label, icon]) => (
+              <button key={id} type="button" aria-current={view === id ? "page" : undefined} onClick={() => onNavigate?.(id)}
+                className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium ${view === id ? "bg-ink text-white" : "text-muted hover:bg-surface"}`}>
+                <Icon name={icon} size={16} />{label}
+              </button>
+            ))}
+          </nav>
           <div className="flex items-center gap-2.5">
-            <Link href="/entrar" className="text-xs text-muted hover:text-ink">Cambiar cuenta</Link>
             <NetworkChip />
-            <span role="img" aria-label={`Perfil de ${ACCOUNT_NAME}`} className="flex size-9 items-center justify-center rounded-[10px] bg-ink text-celeste-dark ring-1 ring-white/10">
-              <Icon name="building" size={20} strokeWidth={1.7} />
-            </span>
+            <Link href="/entrar" aria-label="Cambiar cuenta" title="Cambiar cuenta" className="flex size-10 items-center justify-center rounded-xl bg-ink text-celeste-dark hover:bg-ink-2">
+              <Icon name="person" size={21} strokeWidth={1.7} />
+            </Link>
           </div>
         </div>
       </header>
@@ -95,141 +92,128 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
   const payer = useAccount(roles.payer.id);
   const receiver = useAccount(roles.receiver.id);
   const now = useNow(100);
+  const [view, setView] = useState<View>("inicio");
   const [panel, setPanel] = useState<null | "new" | "withdraw">(null);
-  const [createdIds, setCreatedIds] = useState<string[]>([]);
-  const [presentation, setPresentation] = useState(true);
+  const [detail, setDetail] = useState<DisplayContract | null>(null);
+  const [created, setCreated] = useState<DisplayContract[]>([]);
   const preview = presentationAt(now);
-
-  const { incoming, outgoing } = splitStreams(roles, payer.streams ?? [], receiver.streams ?? []);
+  const { outgoing } = splitStreams(roles, payer.streams ?? [], receiver.streams ?? []);
   const nameOf = (id: string) => users.find((u) => u.id === id)?.name ?? id;
-  const available = sum(incoming, (s) => liveAvailable(s, now));
-  const inRate = sum(incoming.filter((s) => streaming(s, now) && liveVested(s, now) < Number(s.deposited)), ratePerSecond);
-  const paid = sum(outgoing, (s) => Math.min(liveVested(s, now), Number(s.deposited)));
-  const outRate = sum(outgoing.filter((s) => streaming(s, now) && liveVested(s, now) < Number(s.deposited)), ratePerSecond);
   const refresh = () => { payer.refresh(); receiver.refresh(); };
-
   const moves = useMemo(() => {
     const seen = new Set<string>();
     return [...payer.activity, ...receiver.activity]
       .filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)))
-      .sort((x, y) => y.createdAt.localeCompare(x.createdAt))
-      .slice(0, 5);
+      .sort((x, y) => y.createdAt.localeCompare(x.createdAt)).slice(0, 5);
   }, [payer.activity, receiver.activity]);
-  const onchain = moves.some((m) => isOnchain(m.txHash));
-  const loadError = payer.error ?? receiver.error;
+  const contracts: DisplayContract[] = [
+    ...preview.incoming.map(c => ({ ...c, direction: "in" as const })),
+    ...preview.outgoing.map(c => ({ ...c, direction: "out" as const })), ...created,
+  ];
   const loading = !payer.streams || !receiver.streams;
-
-  const a = liveParts(presentation ? preview.earned : available);
-  const p = liveParts(presentation ? preview.paid : paid);
-  const incomingCount = presentation ? preview.incoming.length : incoming.length;
-  const outgoingCount = presentation ? preview.outgoing.length : outgoing.length;
+  const navigate = (next: View) => { setView(next); setDetail(null); };
 
   return (
-    <Shell>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-[32px] font-semibold tracking-[-0.04em]">{ACCOUNT_NAME}</h1>
-          <span className="text-sm text-muted">Compra y vende servicios</span>
-        </div>
-        <div aria-label="Vista de importes" className="inline-flex rounded-full border border-line bg-white p-1">
-          {([[true, "Presentación"], [false, "Saldo real"]] as const).map(([value, label]) => (
-            <button key={label} type="button" aria-pressed={presentation === value} onClick={() => setPresentation(value)}
-              className={`rounded-full px-4 py-2 text-xs font-medium ${presentation === value ? "bg-ink text-white" : "text-muted"}`}>{label}</button>
-          ))}
-        </div>
+    <Shell view={view} onNavigate={navigate}>
+      <div className="flex flex-col gap-1.5">
+        <h1 className="text-[32px] font-semibold tracking-[-0.04em]">{ACCOUNT_NAME}</h1>
+        <span className="text-sm text-muted">Compra y vende servicios</span>
       </div>
-      {loadError && <ErrorNote>{loadError}</ErrorNote>}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section aria-labelledby="in-t" className="flex flex-col gap-[22px] rounded-[24px] bg-ink px-7 pb-2.5 pt-[26px] text-white">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="in-t" className="flex items-center gap-2.5 text-base font-semibold">
-              <span className="size-2 rounded-full bg-celeste-dark animate-pulse-dot" />Cobrás
-            </h2>
-            <span className="text-[13px] text-faint">{incomingCount} {incomingCount === 1 ? "contrato" : "contratos"}</span>
-          </div>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex min-w-0 flex-col gap-2.5">
-              <span className="tnum text-[clamp(44px,4.8vw,62px)] font-medium leading-none tracking-[-0.055em]">
-                ${a.int}<span className="text-subtle">,{a.cents}</span>
+      {(payer.error || receiver.error) && <ErrorNote>{payer.error || receiver.error}</ErrorNote>}
+      <div hidden={view !== "inicio"}>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {(["in", "out"] as const).map(direction => {
+            const dark = direction === "in";
+            const list = contracts.filter(c => c.direction === direction);
+            const amount = liveParts(dark ? preview.earned : preview.paid);
+            return <section key={direction} aria-label={dark ? "Cobrás" : "Pagás"}
+              className={`flex min-w-0 flex-col gap-6 rounded-[24px] border px-5 pb-3 pt-6 sm:px-7 ${dark ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <h2 className="flex items-center gap-2 text-base font-semibold">{dark && <span className="size-2 rounded-full bg-celeste-dark animate-pulse-dot" />}{dark ? "Cobrás" : "Pagás"}</h2>
+                  <span className={`tnum text-sm ${dark ? "text-celeste-dark" : "text-muted"}`}>{dark ? "+" : "−"}{money(dark ? preview.inRate : preview.outRate, 2)} /s</span>
+                </div>
+                <span className={`text-xs ${dark ? "text-faint" : "text-muted"}`}>{list.length} contratos</span>
+              </div>
+              <span className="tnum whitespace-nowrap text-[clamp(32px,4.6vw,60px)] font-medium leading-none tracking-[-0.055em]">
+                ${amount.int}<span className={dark ? "text-subtle" : "text-faint"}>,{amount.cents}</span>
               </span>
-              <span className="tnum text-sm text-faint">{presentation ? "devengado este mes" : "disponible"} · <span className="text-celeste-dark">+{money(presentation ? preview.inRate : inRate, 2)} / s</span></span>
-            </div>
-            <button type="button" onClick={() => setPanel("withdraw")} disabled={loading}
-              className="h-12 rounded-xl bg-white px-[22px] text-[15px] font-semibold text-ink disabled:opacity-50">Retirar</button>
-          </div>
-          <ul>
-            {presentation ? preview.incoming.map(c => (
-              <Row key={c.name} dark name={c.name} sub={c.service} amount={money(c.earned, 2)}
-                note="Servicio mensual" earned={preview.progress} funded={1} />
-            )) : incoming.map((s) => (
-              <Row key={s.id} dark name={s.label ?? `Contrato #${s.id}`} sub={`#${s.id} · ${durationLabel(s.end - s.start)}`}
-                amount={money(liveVested(s, now), 2)} note={untilLabel(s, now)}
-                earned={(now - s.start) / (s.end - s.start)} funded={Number(s.deposited) / Number(s.totalAmount)} />
-            ))}
-            {!presentation && loading && <li className="h-[72px] border-t border-[#222226]" />}
-            {!presentation && !loading && incoming.length === 0 && <li className="border-t border-[#222226] py-5 text-sm text-faint">Sin contratos de cobro.</li>}
-          </ul>
-        </section>
-
-        <section aria-labelledby="out-t" className="flex flex-col gap-[22px] rounded-[24px] border border-line bg-white px-7 pb-2.5 pt-[26px]">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="out-t" className="text-base font-semibold">Pagás</h2>
-            <span className="text-[13px] text-muted">{outgoingCount} {outgoingCount === 1 ? "contrato" : "contratos"}</span>
-          </div>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex min-w-0 flex-col gap-2.5">
-              <span className="tnum text-[clamp(44px,4.8vw,62px)] font-medium leading-none tracking-[-0.055em]">
-                ${p.int}<span className="text-faint">,{p.cents}</span>
-              </span>
-              <span className="tnum text-sm text-muted">devengado a proveedores · <span className="text-ink">−{money(presentation ? preview.outRate : outRate, 2)} / s</span></span>
-            </div>
-            <button type="button" onClick={() => setPanel("new")}
-              className="inline-flex h-12 items-center gap-2 rounded-xl bg-ink px-5 text-[15px] font-semibold text-white">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
-              Nuevo contrato
-            </button>
-          </div>
-          <ul>
-            {presentation ? preview.outgoing.map(c => (
-              <Row key={c.name} name={c.name} sub={c.service} amount={money(c.earned, 2)}
-                note="Servicio mensual" earned={preview.progress} funded={1} />
-            )) : [...outgoing].sort((x, y) => Number(y.id) - Number(x.id)).map((s) => (
-              <Row key={s.id} name={nameOf(s.workerId)} sub={s.label ?? `#${s.id} · ${durationLabel(s.end - s.start)}`}
-                fresh={createdIds.includes(s.id)} amount={money(Math.min(liveVested(s, now), Number(s.deposited)), 2)}
-                note={untilLabel(s, now)} earned={(now - s.start) / (s.end - s.start)} funded={Number(s.deposited) / Number(s.totalAmount)} />
-            ))}
-            {!presentation && loading && <li className="h-[72px] border-t border-line-soft" />}
-            {!presentation && !loading && outgoing.length === 0 && <li className="border-t border-line-soft py-5 text-sm text-muted">Todavía no pagás a ningún proveedor.</li>}
-          </ul>
+              <button type="button" onClick={() => setPanel(dark ? "withdraw" : "new")} disabled={dark && loading} className={ACTION_STYLE}>
+                <Icon name={dark ? "in" : "plus"} size={18} />{dark ? "Retirar" : "Nuevo contrato"}
+              </button>
+              <ul>{list.map(c => <Row key={c.name + c.service} dark={dark} name={c.name} sub={c.service} amount={money(c.earned, 2)}
+                note={c.period ? durationLabel(c.period) : "Servicio mensual"} earned={c.period ? 0 : preview.progress} funded={c.deposited === undefined ? 1 : c.deposited / c.monthly} onClick={() => setDetail(c)} />)}</ul>
+            </section>;
+          })}
+        </div>
+        <section aria-label="Movimientos" className="mt-5 rounded-[20px] border border-line bg-white px-5 py-2">
+          <h2 className="flex min-h-[52px] items-center text-base font-semibold">Movimientos</h2>
+          {preview.incoming.map(c => <div key={c.name} className="flex items-center gap-3 border-t border-line-soft py-4">
+            <span className="flex size-9 items-center justify-center rounded-full bg-celeste-soft text-celeste-ink"><Icon name="in" /></span>
+            <span className="grow text-sm font-medium">Cobro de {c.name}<span className="block text-xs font-normal text-muted">{c.service}</span></span>
+            <span className="tnum text-sm font-semibold text-celeste-ink">+{money(c.earned, 2)}</span>
+          </div>)}
         </section>
       </div>
-
-      <section aria-labelledby="mov-t" className="rounded-[20px] border border-line bg-white px-[22px] py-1.5">
-        <h2 id="mov-t" className="flex min-h-[52px] items-center text-base font-semibold">{onchain ? "Movimientos onchain" : "Movimientos"}</h2>
-        <ul>
-          {moves.map((m) => <Move key={m.id} move={m} nameOf={nameOf} outgoing={outgoing} />)}
-          {moves.length === 0 && <li className="border-t border-line-soft py-5 text-sm text-muted">Sin movimientos todavía.</li>}
-        </ul>
-      </section>
-
-      {panel === "new" && (
-        <NewContract roles={roles} defaultAmount={onchain ? 1 : 90000} onClose={() => setPanel(null)}
-          onCreated={(ids) => { setCreatedIds((x) => [...ids, ...x]); setPresentation(false); refresh(); }} />
-      )}
-      {panel === "withdraw" && (
-        <Withdraw users={users} receiver={withdrawalReceiver(roles, payer.streams ?? [], now)} now={now} onClose={() => setPanel(null)} onDone={refresh} />
-      )}
+      <div hidden={view !== "contratos"}>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-2xl font-semibold tracking-tight">Contratos</h2>
+          <button type="button" className={`${ACTION_STYLE} max-w-[210px]`} onClick={() => setPanel("new")}><Icon name="plus" />Nuevo contrato</button>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{contracts.map(c => (
+          <button key={c.name + c.service} type="button" onClick={() => setDetail(c)} className="flex flex-col gap-4 rounded-2xl border border-line bg-white p-5 text-left hover:border-celeste">
+            <span className="flex w-full items-center justify-between text-xs text-muted"><span>{c.direction === "in" ? "Cobrás" : "Pagás"}</span><span className="rounded-full bg-celeste-soft px-2 py-1 text-celeste-ink">En curso</span></span>
+            <span><span className="block text-lg font-semibold">{c.name}</span><span className="text-sm text-muted">{c.service}</span></span>
+            <span className="tnum text-2xl font-semibold">{money(c.monthly)}<span className="text-xs font-normal text-muted"> / {c.period ? durationLabel(c.period) : "mes"}</span></span>
+            <span className="flex w-full justify-between border-t border-line-soft pt-3 text-xs text-muted"><span>Ver contrato</span><Icon name="arrow" size={15} /></span>
+          </button>
+        ))}</div>
+        <details className="mt-5 rounded-2xl border border-line bg-white px-5 py-4">
+          <summary className="cursor-pointer text-sm font-medium">Comprobantes onchain</summary>
+          <ul className="mt-3">{moves.map(m => <Move key={m.id} move={m} nameOf={nameOf} outgoing={outgoing} />)}</ul>
+        </details>
+      </div>
+      <div hidden={view !== "copiloto"}><PayerProvider><Copilot userId={roles.payer.id} /></PayerProvider></div>
+      {detail && <Drawer title="Contrato de servicio" onClose={() => setDetail(null)}>
+        <span className="text-xs font-medium text-celeste-ink">{detail.direction === "in" ? "Cobrás" : "Pagás"} · En curso</span>
+        <h3 className="text-2xl font-semibold">{detail.name}</h3><p className="-mt-4 text-sm text-muted">{detail.service}</p>
+        <div className="rounded-2xl bg-ink p-5 text-white"><p className="mb-2 text-xs text-faint">{detail.period ? "Monto del contrato" : "Importe mensual"}</p><p className="tnum text-4xl font-medium">{money(detail.monthly)}</p></div>
+        <dl className="space-y-4 text-sm"><div className="flex justify-between"><dt className="text-muted">Devengado</dt><dd className="tnum font-semibold">{money(detail.earned, 2)}</dd></div><div className="flex justify-between"><dt className="text-muted">Duración</dt><dd>{detail.period ? durationLabel(detail.period) : "Mensual"}</dd></div><div className="flex justify-between"><dt className="text-muted">Fondeo</dt><dd>{detail.deposited === undefined ? "100%" : money(detail.deposited, 2)}</dd></div></dl>
+        <button className={ACTION_STYLE} type="button" onClick={() => { setPanel(detail.direction === "in" ? "withdraw" : "new"); setDetail(null); }}>{detail.direction === "in" ? "Retirar" : "Nuevo contrato"}</button>
+      </Drawer>}
+      {panel === "new" && <NewContract roles={roles} onClose={() => setPanel(null)} onCreated={c => { setCreated(x => [...x, c]); refresh(); }} />}
+      {panel === "withdraw" && <Withdraw users={users} receiver={withdrawalReceiver(roles, payer.streams ?? [], now)} now={now} onClose={() => setPanel(null)} onDone={refresh} />}
     </Shell>
   );
 }
 
-function Row({ name, sub, amount, note, earned, funded, dark = false, fresh = false }: {
-  name: string; sub: string; amount: string; note: string; earned: number; funded: number; dark?: boolean; fresh?: boolean;
+function Copilot({ userId }: { userId: string }) {
+  const [scenario] = useState(() => {
+    const p = presentationAt(Date.now() / 1000);
+    return `Analizá este escenario de Nodo Software SRL que muestra la interfaz. Para este análisis usá estos contratos ilustrativos, no los saldos de la prueba onchain: cobros mensuales ${p.incoming.map(c => `${c.name}: ${c.monthly}`).join(", ")}; pagos mensuales ${p.outgoing.map(c => `${c.name}: ${c.monthly}`).join(", ")}; cobrado en el mes ${p.earned.toFixed(2)}, pagado ${p.paid.toFixed(2)} ARGt. No presentes estas cifras como fondos onchain verificables. No propongas contratos nuevos salvo pedido explícito. Si el usuario pide operar, el monto y destinatario deben confirmarse y las restricciones reales siguen vigentes.`;
+  });
+  const { messages, busy, send } = useChat(userId, scenario);
+  const [draft, setDraft] = useState("");
+  const ask = (text: string) => { if (!busy && text.trim()) { setDraft(""); void send(text); } };
+  return <section aria-label="Copiloto" className="mx-auto flex min-h-[500px] w-full max-w-[760px] flex-col gap-5 rounded-3xl border border-line bg-white p-5 sm:p-7">
+    <div><h2 className="text-2xl font-semibold tracking-tight">Copiloto</h2><p className="mt-1 text-sm text-muted">Tus cobros, pagos y próximos pasos, en una conversación.</p></div>
+    <div className="flex grow flex-col gap-4">{messages.length === 0 ? <>
+      <Bubble role="assistant">Hola. Te ayudo a entender el flujo de caja de Nodo Software SRL y a planificar tus próximos pagos.</Bubble>
+      <div className="flex flex-wrap gap-2">{["Resumen de mis contratos", "¿Cuánto me queda a fin de mes?", "¿Cómo organizar mis próximos pagos?"].map(t => <button key={t} type="button" onClick={() => ask(t)} className="rounded-full border border-line px-4 py-2 text-xs hover:bg-surface">{t}</button>)}</div>
+    </> : messages.map((m, i) => <div key={i} className="flex flex-col gap-3"><Bubble role={m.role}>{m.content || <Typing />}</Bubble>{m.proposal && <ProposalCard proposal={m.proposal} />}</div>)}</div>
+    <form className="flex items-center gap-2 rounded-2xl border border-line p-2 pl-4" onSubmit={e => { e.preventDefault(); ask(draft); }}>
+      <input aria-label="Mensaje al copiloto" value={draft} onChange={e => setDraft(e.target.value)} maxLength={1000} placeholder="Preguntá por tus cobros y pagos…" className="min-w-0 grow bg-transparent text-sm outline-none" />
+      <button type="submit" aria-label="Enviar" disabled={busy || !draft.trim()} className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-ink text-white disabled:opacity-40"><Icon name="send" /></button>
+    </form>
+  </section>;
+}
+
+function Row({ name, sub, amount, note, earned, funded, dark = false, fresh = false, onClick }: {
+  name: string; sub: string; amount: string; note: string; earned: number; funded: number; dark?: boolean; fresh?: boolean; onClick?: () => void;
 }) {
   const pct = (v: number) => `${Math.max(0, Math.min(1, v)) * 100}%`;
   return (
-    <li className={`-mx-3 grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-xl border-t px-3 py-4 ${dark ? "border-[#222226]" : "border-line-soft"} ${fresh ? "bg-celeste-soft/60" : ""}`}>
+    <li><button type="button" onClick={onClick} className={`-mx-3 w-[calc(100%+24px)] text-left grid grid-cols-[32px_minmax(0,1fr)_auto] sm:grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-xl border-t px-3 py-4 ${dark ? "border-[#222226]" : "border-line-soft"} ${fresh ? "bg-celeste-soft/60" : ""}`}>
       <span className={`flex size-10 items-center justify-center rounded-[11px] text-[13px] font-semibold ${dark ? "bg-[#1C1C20] text-[#E4E4E7]" : "bg-surface text-ink-2"}`}>{initials(name)}</span>
       <span className="flex min-w-0 flex-col gap-2">
         <span className="flex min-w-0 items-center gap-2">
@@ -247,7 +231,7 @@ function Row({ name, sub, amount, note, earned, funded, dark = false, fresh = fa
         <span className="tnum text-[15px] font-semibold">{amount}</span>
         <span className={`tnum text-xs ${dark ? "text-faint" : "text-subtle"}`}>{note}</span>
       </span>
-    </li>
+    </button></li>
   );
 }
 
@@ -330,89 +314,82 @@ function choice(on: boolean) {
   return on ? "border-2 border-ink" : "border border-line";
 }
 
-function NewContract({ roles, defaultAmount, onClose, onCreated }: {
-  roles: DemoRoles; defaultAmount: number; onClose: () => void; onCreated: (ids: string[]) => void;
+function NewContract({ roles, onClose, onCreated }: {
+  roles: DemoRoles; onClose: () => void; onCreated: (contract: DisplayContract) => void;
 }) {
+  const now = useNow(1000);
   const [providerId, setProviderId] = useState(roles.providers[0].id);
-  const [amount, setAmount] = useState(defaultAmount);
-  const [durationId, setDurationId] = useState<(typeof DURATIONS)[number]["id"]>("15m");
+  const [amountText, setAmountText] = useState("90000");
+  const [depositText, setDepositText] = useState("0.10");
+  const [percent, setPercent] = useState<number | null>(null);
+  const [duration, setDuration] = useState("30");
+  const [unit, setUnit] = useState<DurationUnit>("days");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ ids: string[]; hash: string } | null>(null);
-  const provider = roles.providers.find((u) => u.id === providerId) ?? roles.providers[0];
-  const seconds = DURATIONS.find((d) => d.id === durationId)!.seconds;
-  const valid = amount > 0 && !busy;
-  const fee = feeFor(String(amount));
-  const totalDebit = addAmounts(String(amount), fee);
+  const provider = roles.providers.find(u => u.id === providerId) ?? roles.providers[0];
+  const terms = contractTerms(amountText, depositText, percent, duration, unit);
+  const fee = feeFor(terms?.initialDeposit ?? "0");
+  const totalDebit = addAmounts(terms?.initialDeposit ?? "0", fee);
+  const valid = Boolean(terms) && !busy;
 
-  const create = async () => {
-    if (!valid) return;
-    setBusy(true);
-    setError(null);
+  const handleCreate = async () => {
+    if (!terms || busy) return;
+    setBusy(true); setError(null);
     try {
-      const start = Math.floor(Date.now() / 1000);
-      const total = String(amount);
-      const { txHash, streamIds } = await api.create(roles.payer.id, [{ workerId: provider.id, totalAmount: total, initialDeposit: total }], start, start + seconds);
+      const start = Math.floor(now);
+      const { txHash, streamIds } = await api.create(roles.payer.id,
+        [{ workerId: provider.id, totalAmount: terms.totalAmount, initialDeposit: terms.initialDeposit }], start, start + terms.seconds);
       setResult({ ids: streamIds, hash: txHash });
-      onCreated(streamIds);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+      onCreated({ name: provider.name, service: `Contrato #${streamIds.join(", #")} · ${durationLabel(terms.seconds)}`, monthly: Number(terms.totalAmount), earned: 0, direction: "out", period: terms.seconds, deposited: Number(terms.initialDeposit) });
+    } catch (e) { setError((e as Error).message); }
+    finally { setBusy(false); }
   };
 
-  return (
-    <Drawer title="Nuevo contrato" onClose={() => { if (!busy) onClose(); }}>
-      {result ? (
-        <Done title={`Contrato #${result.ids.join(", #")}`} subtitle={`${provider.name} ya está cobrando ${money(amount / seconds, 2)} / s`}
-          hashes={[result.hash]} onClose={onClose} action="Ver en Pagás" />
-      ) : (
-        <div className="flex flex-col gap-[22px]">
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2.5 text-sm font-semibold">Pagás a</legend>
-            {roles.providers.map((u) => (
-              <button key={u.id} type="button" aria-pressed={u.id === provider.id} onClick={() => setProviderId(u.id)}
-                className={`flex min-h-[60px] items-center gap-3 rounded-[14px] bg-white px-3.5 py-2.5 text-left ${choice(u.id === provider.id)}`}>
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-surface text-xs font-semibold text-ink-2">{initials(u.name)}</span>
-                <span className="text-sm font-semibold">{u.name}</span>
-              </button>
-            ))}
-          </fieldset>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="amount" className="text-sm font-semibold">Monto</label>
-            <div className="flex h-14 items-center gap-1.5 rounded-[14px] border border-line px-4">
-              <span className="text-xl text-faint">$</span>
-              <input id="amount" inputMode="numeric" autoComplete="off" value={groupWhole(amount)} onChange={(e) => setAmount(parseWhole(e.target.value))}
-                className="tnum min-w-0 grow bg-transparent text-[22px] font-medium outline-none" />
-              <span className="text-xs text-subtle">ARGt</span>
-            </div>
-          </div>
-          <fieldset>
-            <legend className="mb-2.5 text-sm font-semibold">Duración</legend>
-            <div className="flex gap-2">
-              {DURATIONS.map((d) => (
-                <button key={d.id} type="button" aria-pressed={d.id === durationId} onClick={() => setDurationId(d.id)}
-                  className={`h-11 flex-1 rounded-xl border text-sm font-medium ${d.id === durationId ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>{d.label}</button>
-              ))}
-            </div>
-          </fieldset>
-          <div className="flex flex-col gap-3.5 rounded-[18px] bg-ink p-5 text-white">
-            <span className="text-[13px] text-faint">{provider.name} cobra</span>
-            <span className="tnum text-4xl font-medium leading-none tracking-[-0.05em]">{money(amount / seconds, 2)}<span className="text-lg text-subtle"> / s</span></span>
-            <span className="tnum border-t border-[#26262B] pt-3.5 text-sm text-faint">Depositás {money(amount)} ahora</span>
-            <span className="tnum text-xs text-faint">Comisión adicional 0,05%: {money(fee, 4)} · Total: {money(totalDebit, 4)}</span>
-          </div>
-          {error && <ErrorNote>{error}</ErrorNote>}
-          <button type="button" onClick={create} disabled={!valid}
-            className="flex h-14 items-center justify-center gap-2.5 rounded-[14px] bg-ink text-base font-semibold text-white disabled:bg-[#1F1F23] disabled:text-white/70">
-            {busy && <Spinner />}
-            {busy ? "Creando contrato…" : amount > 0 ? `Crear y depositar ${money(amount)}` : "Ingresá un monto"}
-          </button>
+  const field = "h-12 min-w-0 rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-ink disabled:opacity-50";
+  return <Drawer title="Nuevo contrato" onClose={() => { if (!busy) onClose(); }}>
+    {result ? <Done title={`Contrato #${result.ids.join(", #")}`} subtitle={`${money(terms?.totalAmount ?? "0")} en servicios · ${money(terms?.initialDeposit ?? "0", 2)} depositados`}
+      hashes={[result.hash]} onClose={onClose} action="Ver contrato" /> : <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2"><label htmlFor="provider" className="text-sm font-semibold">Pagás a</label>
+        <select id="provider" value={providerId} onChange={e => setProviderId(e.target.value)} disabled={busy} className={field}>
+          {roles.providers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </select>
+      </div>
+      <div className="flex flex-col gap-2"><label htmlFor="amount" className="text-sm font-semibold">Monto del contrato</label>
+        <div className="flex h-14 items-center gap-2 rounded-xl border border-line px-4"><span className="text-xl text-faint">$</span>
+          <input id="amount" inputMode="decimal" autoComplete="off" value={amountText} disabled={busy} onChange={e => setAmountText(e.target.value)} className="tnum min-w-0 grow bg-transparent text-2xl font-medium outline-none" />
+          <span className="text-xs text-muted">ARGt</span>
         </div>
-      )}
-    </Drawer>
-  );
+      </div>
+      <fieldset disabled={busy}><legend className="mb-2 text-sm font-semibold">Duración</legend>
+        <div className="grid grid-cols-2 gap-2">
+          <input aria-label="Cantidad de duración" type="number" min="1" step="1" value={duration} onChange={e => setDuration(e.target.value)} className={field} />
+          <select aria-label="Unidad de duración" value={unit} onChange={e => setUnit(e.target.value as DurationUnit)} className={field}>
+            <option value="minutes">Minutos</option><option value="hours">Horas</option><option value="days">Días</option><option value="months">Meses</option>
+          </select>
+        </div>
+        <div className="mt-2 flex gap-2">{([[15, "minutes", "15 min"], [7, "days", "7 días"], [30, "days", "30 días"]] as const).map(([n, u, label]) => <button key={label} type="button" onClick={() => { setDuration(String(n)); setUnit(u); }} className="rounded-full border border-line px-3 py-1.5 text-xs hover:bg-surface">{label}</button>)}</div>
+        {unit === "months" && <p className="mt-2 text-xs text-muted">Cada mes equivale a 30 días.</p>}
+      </fieldset>
+      <fieldset disabled={busy}><legend className="mb-2 text-sm font-semibold">Fondeo inicial</legend>
+        <div className="grid grid-cols-4 gap-2">{([25, 50, 100, null] as const).map(value => <button key={value ?? "custom"} type="button" aria-pressed={percent === value} onClick={() => setPercent(value)}
+          className={`h-10 rounded-xl border text-xs font-medium ${percent === value ? "border-ink bg-ink text-white" : "border-line"}`}>{value === null ? "Otro" : `${value}%`}</button>)}</div>
+        {percent === null && <div className="mt-2 flex items-center gap-2 rounded-xl border border-line px-3"><span className="text-muted">$</span><input aria-label="Importe de fondeo inicial" inputMode="decimal" autoComplete="off" value={depositText} onChange={e => setDepositText(e.target.value)} className="tnum h-12 min-w-0 grow bg-transparent outline-none" /><span className="text-xs text-muted">ARGt</span></div>}
+        <p className="mt-2 text-xs text-muted">Podés completar el resto del fondeo más adelante.</p>
+      </fieldset>
+      <div className="flex flex-col gap-3 rounded-2xl bg-ink p-5 text-white">
+        <span className="text-xs text-faint">{provider.name} cobra</span>
+        <span className="tnum text-3xl font-medium tracking-tight">{money(terms ? Number(terms.totalAmount) / terms.seconds : 0, 4)}<span className="text-base text-subtle"> /s</span></span>
+        <div className="tnum border-t border-[#26262B] pt-3 text-sm"><span className="text-faint">Fondeás ahora </span>{money(terms?.initialDeposit ?? "0", 2)}</div>
+        <span className="tnum text-xs text-faint">Comisión 0,05%: {money(fee, 5)} · Total: {money(totalDebit, 5)}</span>
+      </div>
+      {!terms && <p className="text-xs text-danger">Revisá los importes y la duración. El fondeo inicial no puede superar el monto del contrato.</p>}
+      {error && <ErrorNote>{error}</ErrorNote>}
+      <button type="button" onClick={() => { void handleCreate(); }} disabled={!valid} className="flex h-14 shrink-0 items-center justify-center gap-2 rounded-xl bg-ink text-sm font-semibold text-white disabled:opacity-40">
+        {busy && <Spinner />}{busy ? "Creando contrato…" : `Crear y fondear ${money(terms?.initialDeposit ?? "0", 2)}`}
+      </button>
+    </div>}
+  </Drawer>;
 }
 
 function Withdraw({ users, receiver, now, onClose, onDone }: {
@@ -431,7 +408,6 @@ function WithdrawalAccount({ receiver, workers, onSelect, now, onClose, onDone }
 }) {
   const account = useAccount(receiver.id);
   const incoming = (account.streams ?? []).filter(s => s.workerId === receiver.id);
-  const available = sum(incoming, s => liveAvailable(s, now));
   const maxCents = sum(incoming, (s) => availableCents(s, now));
   const maxAmount = maxCents / 100;
   const [amountText, setAmountText] = useState("0.10");
@@ -442,7 +418,7 @@ function WithdrawalAccount({ receiver, workers, onSelect, now, onClose, onDone }
   const [result, setResult] = useState<{ amount: number; hashes: string[] } | null>(null);
   const plan = planWithdrawal(incoming, amount, now);
   const valid = /^\d+(?:[.,]\d{1,2})?$/.test(amountText) && plan.length > 0 && !busy && !account.error;
-  const a = liveParts(available);
+  const a = liveParts(presentationAt(now).earned);
 
   const submit = async () => {
     if (!valid) return;
@@ -480,9 +456,9 @@ function WithdrawalAccount({ receiver, workers, onSelect, now, onClose, onDone }
             </select>
           </div>
           <div className="flex flex-col gap-1.5 rounded-[18px] bg-ink p-5 text-white">
-            <span className="flex items-center gap-2 text-[13px] text-faint"><span className="size-[7px] rounded-full bg-celeste-dark animate-pulse-dot" />Saldo real para retirar</span>
+            <span className="flex items-center gap-2 text-[13px] text-faint"><span className="size-[7px] rounded-full bg-celeste-dark animate-pulse-dot" />Disponible para retirar</span>
             <span className="tnum text-4xl font-medium leading-none tracking-[-0.05em]">${a.int}<span className="text-subtle">,{a.cents}</span></span>
-            <span className="text-xs text-faint">{account.streams ? "ARGt disponibles en Arbitrum" : "Consultando saldo…"}</span>
+            <span className="text-xs text-faint">ARGt · Nodo Software SRL</span>
           </div>
           <div className="flex flex-col gap-2.5">
             <label htmlFor="wd" className="text-sm font-semibold">Monto</label>
