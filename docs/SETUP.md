@@ -12,7 +12,7 @@ bash contracts/script/install-deps.sh
 npm run dev --prefix web
 ```
 
-La app abre en `http://localhost:3000`, con páginas placeholder en `/payer` y `/worker`. Los endpoints devuelven `501 { "error": "not implemented" }`. `CHAIN_MODE=mock` es el valor inicial; el gateway mock corresponde a B2 y el real a B5. `CHAIN_MODE=real` se reserva para este último.
+La app abre en `http://localhost:3000`, con páginas placeholder en `/payer` y `/worker`. El backend funciona con `CHAIN_MODE=mock`, usuarios y streams sembrados en memoria, sin credenciales. `CHAIN_MODE=real` exige la configuración completa de Supabase, contrato/ABI y wallets. Ver [BACKEND.md](BACKEND.md) para consumir la API.
 
 Las dependencias de Solidity se descargan sin submódulos y no se versionan en `contracts/lib/`. El script instala forge-std `v1.17.0` y OpenZeppelin `v5.4.0`, compatible con el compilador `0.8.24`. No modifica dependencias ya instaladas.
 
@@ -21,7 +21,7 @@ Las dependencias de Solidity se descargan sin submódulos y no se versionan en `
 No se creó un proyecto remoto durante esta tarea: no había una conexión autenticada de Supabase disponible. Los archivos están listos para aplicarse:
 
 1. Crear un proyecto llamado `continuum` en la organización del equipo.
-2. Ejecutar `supabase/migrations/0001_init.sql` una vez en el SQL Editor del proyecto nuevo.
+2. Ejecutar `supabase/migrations/0001_init.sql` y luego `0002_record_stream_creation.sql`, una vez cada una, en el SQL Editor del proyecto nuevo.
 3. Ejecutar `supabase/seed.sql`. Es repetible y conserva las direcciones de wallets que ya se hayan configurado.
 4. Copiar la URL, la anon key y la service-role key en las variables correspondientes de `web/.env.local` y de Vercel.
 
@@ -63,7 +63,7 @@ forge fmt --check
 forge test
 ```
 
-Para correr un solo test, usar `npx vitest run <archivo>` desde `web/` o `forge test --match-test <nombre>` desde `contracts/`. En esta etapa solo hay un test de ejemplo de web; los tests de negocio corresponden a A1 y B1/B4.
+Para correr un solo test, usar `npx vitest run <archivo>` desde `web/` o `forge test --match-test <nombre>` desde `contracts/`. Los tests del backend cubren dominio, gateways, rutas y persistencia. Los tests del contrato corresponden a A1.
 
 Verificado en la Tarea 0: build, lint, tipos y un test de Vitest; compilación de Foundry y reinstalación de dependencias en una carpeta limpia; tres páginas con HTTP 200 y siete operaciones API con HTTP 501. La migración y el seed se ejecutaron en PostgreSQL en memoria (PGlite), incluyendo repetición del seed, preservación de wallets existentes, referencias entre tablas y bloqueo de lectura con RLS para un rol sin privilegios.
 

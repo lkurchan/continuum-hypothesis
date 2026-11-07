@@ -204,12 +204,14 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 - [ ] A5. Después: ayudar a B con la integración y sembrar los streams para la demo.
 
 ### Módulo B — Backend y chain (`web/lib/domain`, `web/lib/chain`, `web/lib/db`, `web/app/api/**`, `supabase/`)
-- [ ] B1. `vesting.ts` con tests, espejo de la fórmula del contrato.
-- [ ] B2. `MockStreamGateway` funcionando **primero**, para que C y D integren de entrada.
-- [ ] B3. Migraciones de Supabase y seed de usuarios demo.
-- [ ] B4. Rutas de la API contra el gateway y la base, con tests de la lógica de cada ruta.
-- [ ] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
+- [x] B1. `vesting.ts` con tests, espejo de la fórmula del contrato.
+- [x] B2. `MockStreamGateway` funcionando **primero**, para que C y D integren de entrada.
+- [x] B3. Migraciones de Supabase y seed de usuarios demo.
+- [x] B4. Rutas de la API contra el gateway y la base, con tests de la lógica de cada ruta.
+- [x] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
 - [ ] B6. Prueba de punta a punta en mainnet: el **primer hash real**, que se guarda para el README.
+
+B1–B5 están implementados y probados con demo local y proveedores simulados. La migración remota y la integración real siguen pendientes de Supabase, ABI/contrato de A, credenciales y fondos. Ver `docs/BACKEND.md`.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
 - [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.

@@ -82,6 +82,6 @@ anvil --fork-url "$ARBITRUM_RPC_URL"
 FOUNDRY_PROFILE=arbitrum forge build
 ```
 
-Todavía no hay tests de negocio del contrato: corresponden a A1. Sus funciones revierten con `NotImplemented()` y pueden producir advertencias de parámetros sin usar. `vestedAt`, los gateways y las rutas HTTP también son stubs; la API responde 501 hasta B4.
+Todavía no hay tests de negocio del contrato: corresponden a A1. Sus funciones revierten con `NotImplemented()` y pueden producir advertencias de parámetros sin usar. El backend ya implementa vesting, gateway mock, API y persistencia. `CHAIN_MODE=mock` funciona sin credenciales y reinicia sus datos al reiniciar el proceso. El gateway real requiere el ABI de A, contrato desplegado, Supabase y wallets fondeadas. Ver `docs/BACKEND.md` para integración y límites de la demo.
 
 Deploy web: conectar el repositorio en Vercel con Root Directory `web`, Node.js `24.x`, build `npm run build` e instalación `npm ci`. Después de vincular el proyecto, el comando manual desde `web/` es `npx vercel --prod`. Ver `docs/SETUP.md` para Supabase, variables y pendientes. No hay un deploy onchain en la Tarea 0.
