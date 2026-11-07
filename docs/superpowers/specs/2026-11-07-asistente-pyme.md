@@ -85,3 +85,7 @@ Los errores de OpenAI se registran solo con nombre, estado HTTP, código y reque
 ## Consultas sin propuestas
 
 Si el último mensaje pide explícitamente no proponer/crear/armar/generar acuerdos, o consultar sin propuestas, el servidor fuerza `tool_choice: none`. También descarta cualquier tool-call inesperado en esa respuesta. Se aplica al último mensaje para que una consulta posterior pueda volver a solicitar una propuesta. Un pedido de no ejecutar pagos no desactiva por sí solo las propuestas: estas nunca ejecutan pagos.
+
+## Fondeo pendiente
+
+El snapshot del pagador informa cero por fondear en acuerdos cancelados: no admite nuevos depósitos y el saldo retenido ya representa el cierre. El total pendiente incluye acuerdos finalizados sin cancelar que todavía admiten completar el fondeo. Se informa por separado del total de acuerdos vigentes para que el modelo no confunda ambos conceptos.

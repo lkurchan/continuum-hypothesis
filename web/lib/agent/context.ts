@@ -71,17 +71,18 @@ export async function payerSnapshot(service: StreamService, userId: string, nowS
   const [streams, activity] = await Promise.all([service.streams(userId), service.activity(userId)]);
   const providers = users.filter((u) => u.role === "worker");
   const nameOf = (id: string) => providers.find((u) => u.id === id)?.name ?? id;
-  const sum = { vested: 0, withdrawn: 0, pending: 0, toFund: 0 };
+  const sum = { vested: 0, withdrawn: 0, pending: 0, toFund: 0, totalToFund: 0 };
 
   const lines = streams.map((s) => {
     const status = statusAt(s, nowSec);
     const total = Number(s.totalAmount), deposited = Number(s.deposited), vested = Number(vestedAt(s, nowSec));
     const live = status === "streaming" || status === "scheduled";
-    // ponytail: mirrors fundingStatus() from the B2B pivot; swap to lib/domain/funding.ts once B merges it.
+    const toFund = status === "canceled" ? 0 : Math.max(0, total - deposited);
     const fundedUntil = s.start + Math.floor((deposited / total) * (s.end - s.start));
     const debt = Math.max(0, vested - deposited);
     sum.vested += vested; sum.withdrawn += Number(s.withdrawn);
-    if (live) { sum.pending += total - vested; sum.toFund += total - deposited; }
+    sum.totalToFund += toFund;
+    if (live) { sum.pending += total - vested; sum.toFund += toFund; }
     const coverage = status === "canceled" ? "cancelado"
       : deposited >= total ? "completo, fondeado al 100 %"
       : debt > 0 ? `ATRASADO: le debe ${pesos(debt)} al proveedor (cubierto solo hasta ${date(fundedUntil)})`
@@ -89,7 +90,7 @@ export async function payerSnapshot(service: StreamService, userId: string, nowS
     return [
       `- Acuerdo #${s.id} con ${nameOf(s.workerId)}${s.label ? ` (servicio: ${s.label})` : ""}: estado ${status}, ${coverage}.`,
       `  Período: ${date(s.start)} a ${date(s.end)}. Precio total ${pesos(total)}. Ritmo ${pesos((total / (s.end - s.start)) * 86_400)} por día.`,
-      `  Devengado ahora ${pesos(vested)}. Fondeado ${pesos(deposited)}. Retirado por el proveedor ${pesos(s.withdrawn)}. Falta fondear ${pesos(total - deposited)}.`,
+      `  Devengado ahora ${pesos(vested)}. Fondeado ${pesos(deposited)}. Retirado por el proveedor ${pesos(s.withdrawn)}. Falta fondear ${pesos(toFund)}.`,
     ].join("\n");
   });
 
@@ -101,6 +102,7 @@ export async function payerSnapshot(service: StreamService, userId: string, nowS
     `Proveedores disponibles (usá el id en proponer_acuerdo):\n${providers.map((p) => `- id ${p.id}: ${p.name}`).join("\n") || "- Ninguno."}`,
     `Acuerdos de servicio:\n${lines.join("\n") || "- No tiene acuerdos todavía."}`,
     `Totales: devengado ${pesos(sum.vested)}, retirado por proveedores ${pesos(sum.withdrawn)}. En acuerdos vigentes: falta devengar ${pesos(sum.pending)} y falta fondear ${pesos(sum.toFund)}.`,
+    `Total pendiente de fondeo (excluye cancelados): ${pesos(sum.totalToFund)}. Incluye acuerdos finalizados sin cancelar con fondeo pendiente. Los cancelados no admiten nuevos depósitos.`,
     `Últimos movimientos:\n${recent.join("\n") || "- Ninguno."}`,
   ].join("\n\n");
 }
