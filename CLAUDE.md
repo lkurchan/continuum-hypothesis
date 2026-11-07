@@ -8,7 +8,11 @@ Proyecto para HackaTwin (hackathon presencial, sábado 7/11/2026). La entrega ci
 
 **Idea:** "sueldo por segundo". El pagador deposita el monto del período en una stablecoin local (ARGt) y el receptor lo va desbloqueando de forma continua. Puede retirar cuando quiera cualquier monto menor o igual a lo ya devengado. Ataca el problema de "llegar a fin de mes". La misma primitiva (pagador, receptor, token, monto, inicio, fin) sirve también para pagos B2B entre PyMEs, en lugar de pagos a 30 o 60 días. Si sobra tiempo, se suma un copiloto de liquidez con IA.
 
-**Track:** Stablecoins (Twin). Es la recomendación y falta que el equipo la confirme. Las bases de los tres tracks están en `docs/*.pdf`.
+**Producto:** Continuum. El usuario es un repartidor o freelancer, y el que paga es una plataforma o empresa. **`PRD.md` es la fuente de verdad**: alcance, diseño del contrato, interfaces entre módulos, tareas y cronograma. Leelo antes de tocar código.
+
+**Tracks:** Stablecoins (Twin) como principal y Belo como secundario. Las bases están en `docs/*.pdf`. Belo cierra a las 17:30 y Twin a las 18:00. El freeze de features es a las 15:00.
+
+**Stack:** Arbitrum One, contrato propio en `contracts/` (Foundry + OpenZeppelin) y `web/` (Next.js App Router + viem + Supabase + Vercel AI SDK con Claude). Wallets custodiales con usuarios demo fijos y claves en variables de entorno. Deploy en Vercel.
 
 ## Requisitos duros del track Twin (para no quedar descalificados)
 
@@ -35,7 +39,7 @@ Proyecto para HackaTwin (hackathon presencial, sábado 7/11/2026). La entrega ci
 - **SDD (spec-driven):** antes de codear un módulo tiene que existir su spec en `docs/superpowers/specs/` y su plan en `docs/superpowers/plans/`. Si el código y la spec divergen, se actualiza la spec en el mismo PR.
 - **TDD liviano en backend y contratos:** tests de la lógica de negocio (cálculo de lo devengado, límites de retiro, permisos) antes o junto con la implementación. El objetivo es que funcione, no la cobertura. El frontend no lleva tests.
 - **Git:** cada feature va en su propia branch y se integra por PR. No pushear a `main` salvo que lo pidan explícitamente. El repo todavía no tiene commits y la branch local es `master`, mientras que la principal esperada es `main`.
-- **Módulos independientes:** trabajan en paralelo 4 cuentas de Claude Code y 2 de Codex. Cada módulo expone una interfaz chica y documentada, y se integra contra mocks hasta que el módulo real esté listo. Evitar que dos módulos editen los mismos archivos.
+- **Módulos independientes:** trabajan en paralelo 4 cuentas de Claude Code y 2 de Codex. Los módulos A (contrato), B (backend y chain), C (UI del pagador) y D (UI del trabajador y agente) tocan solo sus carpetas, listadas en la sección 9 de `PRD.md`. Las interfaces compartidas (`web/lib/domain/types.ts`, `StreamGateway` y las rutas de la API, sección 8 de `PRD.md`) no se cambian sin avisar. Todo se integra contra `MockStreamGateway` hasta que esté el real.
 - **SOLID:** la lógica de dominio no depende de la chain ni de la UI. El acceso a la blockchain va detrás de una interfaz, con una implementación real y una mock para la demo offline.
 - **Demo primero:** todo flujo que se muestre en el pitch necesita una salida de emergencia (datos sembrados o un modo mock) por si falla la red en vivo.
 
