@@ -9,6 +9,11 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:chain": "node scripts/test-chain.mjs",
+    "test:api": "node scripts/smoke-backend.mjs",
+    "backend:check": "node scripts/check-backend.mjs",
+    "backend:verify-api": "node scripts/verify-api.mjs",
+    "backend:wallets": "node scripts/sync-wallets.mjs",
+    "backend:seed": "node scripts/seed-demo.mjs",
     "test:watch": "vitest",
     "typecheck": "next typegen && tsc --noEmit"
   },
@@ -22,6 +27,7 @@
     "viem": "^2.57.16"
   },
   "devDependencies": {
+    "@next/env": "16.4.5",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^24.19.2",
     "@types/react": "^19",

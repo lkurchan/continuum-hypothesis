@@ -16,28 +16,28 @@ La app abre en `http://localhost:3000`, con páginas placeholder en `/payer` y `
 
 Las dependencias de Solidity se descargan sin submódulos y no se versionan en `contracts/lib/`. El script instala forge-std `v1.17.0` y OpenZeppelin `v5.4.0`, compatible con el compilador `0.8.24`. No modifica dependencias ya instaladas.
 
-## Supabase pendiente
+## Supabase
 
-No se creó un proyecto remoto durante esta tarea: no había una conexión autenticada de Supabase disponible. Los archivos están listos para aplicarse:
+El proyecto remoto del equipo ya está configurado: se validaron las cuatro tablas, el RPC transaccional y las wallets demo, además de las lecturas HTTP en modo real. Para repetir la instalación en un proyecto nuevo:
 
 1. Crear un proyecto llamado `continuum` en la organización del equipo.
 2. Ejecutar `supabase/migrations/0001_init.sql` y luego `0002_record_stream_creation.sql`, una vez cada una, en el SQL Editor del proyecto nuevo.
 3. Ejecutar `supabase/seed.sql`. Es repetible y conserva las direcciones de wallets que ya se hayan configurado.
-4. Copiar la URL, la anon key y la service-role key en las variables correspondientes de `web/.env.local` y de Vercel.
+4. Copiar la URL y la clave de servidor (service_role o secret) en las variables correspondientes de `web/.env.local` y de Vercel. La clave anon/publishable es opcional para este backend.
 
 Las cuatro tablas tienen RLS habilitado y no tienen políticas de acceso público. El backend debe usar `SUPABASE_SERVICE_ROLE_KEY` exclusivamente en el servidor. El `userId` de la demo no constituye una sesión autenticada.
 
-El seed incluye `platform`, `worker1` y `worker2`, todos con la dirección cero como placeholder. Reemplazar esas direcciones por las wallets demo antes de usar `CHAIN_MODE=real`; las claves privadas van solo en `DEMO_PK_PLATFORM`, `DEMO_PK_WORKER1` y `DEMO_PK_WORKER2`. La dirección de Belo queda pendiente de confirmación.
+El seed inicial incluye `platform`, `worker1` y `worker2` con direcciones cero. En el proyecto actual ya coinciden con las wallets demo. Para configurar una instalación nueva, usar `backend:wallets` como explica [OPERATIONS.md](OPERATIONS.md); las claves privadas van solo en `DEMO_PK_PLATFORM`, `DEMO_PK_WORKER1` y `DEMO_PK_WORKER2`. La dirección de Belo queda pendiente de confirmación.
 
-## Vercel pendiente
+## Vercel
 
-No se creó ni desplegó un proyecto remoto durante esta tarea: no había una conexión autenticada de Vercel disponible.
+El proyecto `continuum-hypothesis` está desplegado en [continuum-hypothesis.vercel.app](https://continuum-hypothesis.vercel.app). Production usa el backend real con acceso protegido; Preview conserva el modo mock sin claves reales. Se verificaron usuarios, streams e historial de B6 desde el dominio publicado. Ver [VERCEL.md](VERCEL.md) para el deployment, commit y alcance exactos; la UI completa requiere integrar su PR.
 
 Importar `lkurchan/continuum-hypothesis` desde GitHub con estos ajustes:
 
 | Ajuste | Valor |
 |---|---|
-| Project name | `continuum` |
+| Project name | `continuum-hypothesis` |
 | Framework preset | Next.js |
 | Root Directory | `web` |
 | Node.js | `24.x` |
@@ -48,7 +48,7 @@ Importar `lkurchan/continuum-hypothesis` desde GitHub con estos ajustes:
 
 Node.js 24 está entre las [versiones soportadas por Vercel](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions); `web/package.json` fija la misma versión mayor para el despliegue.
 
-Cargar las variables de `web/.env.example` para Production y Preview. El scaffold compila sin credenciales; mantener `CHAIN_MODE=mock` hasta integrar los módulos. Las claves privadas y la service-role key nunca llevan el prefijo `NEXT_PUBLIC_`. La integración con el agente y `ANTHROPIC_API_KEY` quedan para una tarea posterior.
+Seguir [VERCEL.md](VERCEL.md) para el despliegue real: protección de acceso, variables concretas, duración de Functions y validación. La API custodial demo no tiene autenticación propia: activar protección para todos los deployments antes de cargar claves reales. Las claves privadas y la service-role key nunca llevan el prefijo `NEXT_PUBLIC_`. La integración con el agente y `ANTHROPIC_API_KEY` quedan para una tarea posterior.
 
 ## Validación
 

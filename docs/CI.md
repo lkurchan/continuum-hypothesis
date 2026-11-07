@@ -4,7 +4,7 @@ El workflow `.github/workflows/ci.yml` corre en pull requests, pushes a `main` y
 
 | Check | Qué verifica |
 |---|---|
-| Backend and build | `npm ci`, lint, tipos, tests del backend y build Next.js en mock |
+| Backend and build | `npm ci`, lint, tipos, tests del backend, build Next.js y smoke HTTP mock completo |
 | Contracts and ABI | Dependencias fijadas, formato, build, 22 tests con 512 iteraciones de fuzz y ABI versionado igual al exportado |
 | A+B on local Anvil | Crear, aprobar, fondear, retirar, cancelar y retirar remanente con firmas, receipts y artefactos del checkout |
 | PostgreSQL migrations and permissions | PostgreSQL 17 temporal: migraciones, seed repetible, montos exactos, RPC atómico y aislamiento de anon |
@@ -21,6 +21,7 @@ npm run lint --prefix web
 npm run typecheck --prefix web
 npm test --prefix web
 CHAIN_MODE=mock npm run build --prefix web
+npm run test:api --prefix web
 forge fmt --check --root contracts
 forge build --root contracts
 forge test --root contracts --no-match-path 'test/*.fork.t.sol' --fuzz-runs 512
