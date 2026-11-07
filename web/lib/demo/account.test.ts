@@ -56,4 +56,17 @@ describe("planWithdrawal", () => {
   it("ignores non-positive amounts", () => {
     expect(planWithdrawal([a], 0, 500)).toEqual([]);
   });
+
+  it("preserves decimal cents without floating-point truncation", () => {
+    const small = stream("2", "worker1", "0.29");
+    expect(availableCents(small, 500)).toBe(29);
+    expect(planWithdrawal([small], 0.29, 500)).toEqual([{ streamId: "2", amount: "0.29" }]);
+    expect(planWithdrawal([small], 0.30, 500)).toEqual([]);
+  });
+
+  it("rejects non-finite and unsafe requested amounts", () => {
+    for (const amount of [NaN, Infinity, Number.MAX_SAFE_INTEGER]) {
+      expect(planWithdrawal([a], amount, 500)).toEqual([]);
+    }
+  });
 });

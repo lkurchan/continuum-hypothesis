@@ -67,6 +67,8 @@ describe("demo sessions", () => {
     for (const next of ["https://evil.example", "//evil.example", "/\\evil.example", "/api/streams", "/login", null]) expect(safeNext(next)).toBe("/");
     expect(safeNext("/worker/retirar")).toBe("/worker/retirar");
     expect(safeNext("/payer/asistente")).toBe("/payer/asistente");
+    expect(safeNext("/demo")).toBe("/demo");
+    expect(safeNext("/entrar")).toBe("/entrar");
   });
   it("uses the HTTP host behind Next normalization, without trusting forwarded host", () => {
     expect(sameOrigin(new Request("http://localhost:3000/api/auth/login", { headers: { host: "127.0.0.1:3000", origin: "http://127.0.0.1:3000" } }))).toBe(true);

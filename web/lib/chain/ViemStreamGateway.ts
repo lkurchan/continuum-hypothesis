@@ -71,7 +71,7 @@ export function createViemIO(rpcUrl: string, resolveKey: (user: DemoUser) => str
 
 export class ViemStreamGateway implements StreamGateway {
   private readonly queues = new Map<string, Promise<unknown>>();
-  constructor(private readonly config: { contract: Address; token: Address; abi: Abi; io: ChainIO; now?: () => number }) {
+  constructor(private readonly config: { contract: Address; token: Address; abi: Abi; io: ChainIO; now?: () => number; treasury?: string }) {
     address(config.contract);
     address(config.token);
     requireCondition(isAddressEqual(config.token, ARGT_ADDRESS), "El token configurado no es ARGt en Arbitrum.", 503);
@@ -85,7 +85,9 @@ export class ViemStreamGateway implements StreamGateway {
     requireCondition(rpc && /^https?:\/\//.test(rpc) && contract, "Falta configurar RPC y contrato de Arbitrum.", 503);
     address(contract);
     address(token);
-    return new ViemStreamGateway({ contract, token, abi: continuumStreamsAbi, io: createViemIO(rpc, user => {
+    // A missing treasury must not block startup: transferFee reports it and the fee stays pending.
+    const treasury = process.env.TREASURY_ADDRESS || undefined;
+    return new ViemStreamGateway({ contract, token, abi: continuumStreamsAbi, treasury, io: createViemIO(rpc, user => {
       requireCondition(/^[a-zA-Z0-9_-]{1,64}$/.test(user.id), "Identificador de usuario inválido.");
       return process.env[`DEMO_PK_${user.id.toUpperCase()}`];
     }) });
@@ -224,6 +226,19 @@ export class ViemStreamGateway implements StreamGateway {
       const events = this.events(receipt, "Canceled").filter(e => e.id === idValue(id));
       this.confirmed(events.length === 1 && typeof events[0].refundedToPayer === "bigint" && typeof events[0].keptByRecipient === "bigint", receipt);
       return { txHash: receipt.transactionHash, refunded: amountFromUnits(String(events[0].refundedToPayer)), kept: amountFromUnits(String(events[0].keptByRecipient)) };
+    });
+  }
+  transferFee(payer: DemoUser, amount: Amount) {
+    return this.exclusive(payer, "payer", async () => {
+      const treasury = this.config.treasury;
+      requireCondition(treasury, "Falta configurar TREASURY_ADDRESS para cobrar la comisión.", 503);
+      address(treasury);
+      const value = BigInt(unitsText(positiveAmount(amount)));
+      const balance = await this.config.io.read(this.config.token, erc20Abi, "balanceOf", [payer.address]);
+      requireCondition(typeof balance === "bigint" && balance >= value, "Saldo insuficiente de ARGt.", 409);
+      // Direct ERC-20 transfer from the payer: no approve needed.
+      const receipt = await this.send(payer, "transfer", [treasury, value], true);
+      return { txHash: receipt.transactionHash };
     });
   }
   getStream(id: string): Promise<Omit<StreamView, "payerId" | "workerId" | "label">> {

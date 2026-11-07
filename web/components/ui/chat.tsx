@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PROPOSAL_SEPARATOR, type Proposal } from "@/lib/agent/proposal";
+import { redirectToLogin } from "@/lib/auth/client";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string; proposal?: Proposal };
 
@@ -28,6 +29,7 @@ export function useChat(userId: string | undefined) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, messages: history.filter((m) => m.content).map(({ role, content }) => ({ role, content })) }),
       });
+      if (response.status === 401) { redirectToLogin(); return; }
       if (!response.ok || !response.body) {
         const data = await response.json().catch(() => ({}));
         write((data as { error?: string }).error ?? "No pude responder ahora.");

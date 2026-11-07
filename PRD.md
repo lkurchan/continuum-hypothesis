@@ -65,11 +65,11 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 | Token | ARGt `0x59863989d080B22476DB95656d0C3CC18be92214` (Arbitrum), 18 decimals |
 | Contrato | Propio, en Solidity con Foundry y OpenZeppelin (`SafeERC20`, `ReentrancyGuard`) |
 | App | Monorepo: `contracts/` (Foundry) y `web/` (Next.js App Router, TypeScript, Tailwind) |
-| Superficies | **Trabajador** (`/worker`): mobile-first (unos 390px), **PWA liviana** y standalone por ahora, pero integrable en Belo (ver 6.1). **Pagador** (`/payer`): dashboard web de escritorio |
+| Superficies | **Demo** (`/demo`): cuenta única de presentación que compone las identidades de pagador y receptor, con “Cobrás”, “Pagás”, creación y retiro. Portada con contador ilustrativo en `/`; selector por rol en `/entrar`. **Trabajador** (`/worker`): mobile-first (unos 390px), **PWA liviana** y standalone por ahora, pero integrable en Belo (ver 6.1). **Pagador** (`/payer`): dashboard web de escritorio |
 | PWA | Solo `app/manifest.ts`, íconos y color de tema, con `display: standalone` y `start_url: /worker`. **Sin service worker ni modo offline** (el caché puede mostrar una versión vieja en la demo) **y sin push** (eso va en el roadmap) |
 | Backend | Route handlers de Next.js que firman con **viem** |
 | Wallets | **Custodiales**: usuarios demo fijos, con una clave privada por usuario en variables de entorno. Cada wallet necesita algo de ETH en Arbitrum para gas |
-| Auth | Acceso de operador con clave compartida del equipo y cookie firmada de 8 horas; luego selector de usuario demo ("Entrar como…"), sin signup. Backend en `docs/DEMO-LOGIN.md`; Gio implementa la pantalla |
+| Auth | Acceso de operador con clave compartida del equipo y cookie firmada de 8 horas; luego selector de usuario demo ("Entrar como…"), sin signup. Pantalla y cierre de sesión en `/login`; contrato y configuración en `docs/DEMO-LOGIN.md` |
 | Base | **Supabase** (Postgres): usuarios, metadata de streams, actividad y reglas del agente |
 | IA | OpenAI vía el **SDK oficial** (`openai`, Chat Completions con streaming). El servidor le pasa los saldos ya calculados. Al proveedor le explica su estado; al cliente le dice hasta cuándo está cubierto y le **propone** acuerdos con el tool `proponer_acuerdo`, que el usuario confirma en una tarjeta. Hace falta `OPENAI_API_KEY` y `OPENAI_MODEL` |
 | Deploy | Vercel |

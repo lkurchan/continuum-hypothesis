@@ -4,7 +4,7 @@ Proyecto desplegado en [continuum-hypothesis.vercel.app](https://continuum-hypot
 
 ## Migración al login de la app
 
-El backend del acceso propio está definido en [DEMO-LOGIN.md](DEMO-LOGIN.md). Antes de desplegarlo en modo real, configurar `DEMO_AUTH_PASSWORD_HASH` y `DEMO_AUTH_SECRET` como secretos de Production y coordinar la pantalla `/login` con Gio. Sin configuración, el nuevo backend bloquea los datos y pagos con 503. Mantener **All Deployments** hasta integrar/probar la pantalla. Después se puede usar **Standard Protection**, manteniendo protegidos los previews y los deployments históricos sin este guard. El procedimiento y los endpoints están en la guía de login. La evidencia siguiente corresponde al despliegue anterior al login.
+El acceso propio está definido en [DEMO-LOGIN.md](DEMO-LOGIN.md), con pantalla en `/login`. Antes de desplegarlo en modo real, configurar `DEMO_AUTH_PASSWORD_HASH` y `DEMO_AUTH_SECRET` como secretos de Production. Sin configuración, el backend bloquea los datos y pagos con 503. Mantener **All Deployments** hasta probar el acceso. Después se puede usar **Standard Protection**, manteniendo protegidos los previews y los deployments históricos sin este guard. El procedimiento y los endpoints están en la guía de login. La evidencia siguiente corresponde al despliegue anterior al login.
 
 ## Estado verificado el 7/11/2026, 12:41 ART
 

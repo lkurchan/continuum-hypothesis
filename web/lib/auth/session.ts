@@ -65,5 +65,5 @@ export function cookieOptions(request: Request) {
     sameSite: "strict" as const, path: "/", maxAge: SESSION_SECONDS };
 }
 
-const destinations = new Set(["/", "/payer", "/payer/nuevo", "/payer/asistente", "/worker", "/worker/retirar", "/worker/actividad", "/worker/copiloto", "/lab"]);
+const destinations = new Set(["/", "/demo", "/entrar", "/payer", "/payer/nuevo", "/payer/asistente", "/worker", "/worker/retirar", "/worker/actividad", "/worker/copiloto", "/lab"]);
 export const safeNext = (value: unknown) => typeof value === "string" && destinations.has(value) ? value : "/";

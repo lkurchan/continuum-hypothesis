@@ -1,4 +1,5 @@
 import type { Activity, Amount, DemoUser, StreamView } from "@/lib/domain/types";
+import { redirectToLogin } from "@/lib/auth/client";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -7,6 +8,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     headers: init?.body ? { "Content-Type": "application/json" } : undefined,
   });
   const data = await response.json().catch(() => ({}));
+  if (response.status === 401) redirectToLogin();
   if (!response.ok) throw new Error((data as { error?: string }).error ?? "No se pudo completar la operación.");
   return data as T;
 }
@@ -17,10 +19,10 @@ export const api = {
   users: () => call<DemoUser[]>("/api/users"),
   streams: (userId: string) => call<StreamView[]>(`/api/streams?userId=${encodeURIComponent(userId)}`),
   activity: (userId: string) => call<Activity[]>(`/api/activity?userId=${encodeURIComponent(userId)}`),
-  create: (payerId: string, items: { workerId: string; totalAmount: Amount; initialDeposit: Amount }[], start: number, end: number) =>
-    post<{ txHash: string; streamIds: string[] }>("/api/streams", { payerId, items, start, end }),
+  create: (payerId: string, items: { workerId: string; totalAmount: Amount; initialDeposit: Amount; label?: string }[], start: number, end: number) =>
+    post<{ txHash: string; streamIds: string[]; feeTxHash?: string }>("/api/streams", { payerId, items, start, end }),
   topUp: (userId: string, id: string, amount: Amount) =>
-    post<{ txHash: string }>(`/api/streams/${id}/topup`, { userId, amount }),
+    post<{ txHash: string; feeTxHash?: string }>(`/api/streams/${id}/topup`, { userId, amount }),
   withdraw: (userId: string, id: string, amount: Amount, destination: "wallet" | "belo") =>
     post<{ txHash: string }>(`/api/streams/${id}/withdraw`, { userId, amount, destination }),
   cancel: (userId: string, id: string) =>

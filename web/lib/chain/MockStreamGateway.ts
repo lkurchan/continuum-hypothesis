@@ -118,6 +118,14 @@ export class MockStreamGateway implements StreamGateway {
       start: stream.start, end: stream.end, canceledAt: stream.canceledAt, status: statusAt(stream, this.now()) };
   }
 
+  async transferFee(payer: DemoUser, amount: Amount) {
+    requireCondition(payer.role === "payer", "Se requiere un pagador.", 403);
+    const units = BigInt(unitsText(positiveAmount(amount)));
+    requireCondition(this.balance(payer.address) >= units, "Saldo insuficiente del pagador.", 409);
+    this.transfer(payer.address, -units);
+    return { txHash: this.hash() };
+  }
+
   async balanceOf(address: `0x${string}`): Promise<Amount> {
     return amountFromUnits(this.balance(address).toString());
   }

@@ -48,6 +48,8 @@ try {
   }
   const page = await fetch(origin + "/worker", { redirect: "manual" });
   ensure(page.status === 307 && new URL(page.headers.get("location"), origin).pathname === "/login", "La página no redirige al login.");
+  const loginPage = await fetch(origin + "/login?next=/payer/asistente");
+  ensure(loginPage.status === 200 && (await loginPage.text()).includes("Ingresá a la demo"), "La pantalla de login no está disponible.");
   const login = (value, requestOrigin = origin) => fetch(origin + "/api/auth/login", { method: "POST", headers: { "content-type": "application/json", origin: requestOrigin }, body: JSON.stringify({ password: value, next: "//evil.example" }) });
   ensure((await login(password, "https://evil.example")).status === 403, "Login permitió otro origen.");
   const wrong = await login("incorrect-password");
@@ -59,6 +61,12 @@ try {
   ensure(cookie?.startsWith("continuum_demo_session="), "Falta cookie de sesión.");
   const users = await fetch(origin + "/api/users", { headers: { cookie } });
   ensure(users.status === 200 && (await users.json()).length === 3, "Lectura autorizada falló.");
+  for (const next of ["/demo", "/entrar"]) {
+    const auth = await fetch(origin + "/api/auth/login", { method: "POST", headers: { "content-type": "application/json", origin }, body: JSON.stringify({ password, next }) });
+    ensure(auth.status === 200 && (await auth.json()).next === next, `Login no conserva ${next}.`);
+    const screen = await fetch(origin + next, { headers: { cookie } });
+    ensure(screen.status === 200, `Pantalla autorizada no disponible: ${next}.`);
+  }
   ensure((await fetch(origin + "/api/streams/0/topup", { method: "POST", headers: { cookie, origin: "https://evil.example" } })).status === 403, "Mutación cross-site aceptada.");
   const topup = await fetch(origin + "/api/streams/0/topup", { method: "POST", headers: { cookie, origin, "content-type": "application/json" }, body: JSON.stringify({ userId: "platform", amount: "1" }) });
   ensure(topup.status === 200 && (await topup.json()).txHash.startsWith("mock:"), "Mutación mock autorizada falló.");

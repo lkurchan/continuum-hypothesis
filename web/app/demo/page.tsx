@@ -11,6 +11,8 @@ import { useAccount, useNow } from "@/components/ui/hooks";
 import { ErrorNote, Hash, MockNotice, NetworkChip } from "@/components/ui/kit";
 import { availableCents, pickRoles, planWithdrawal, splitStreams, type DemoRoles } from "@/lib/demo/account";
 import type { Activity, DemoUser, StreamView } from "@/lib/domain/types";
+import { addAmounts } from "@/lib/domain/amounts";
+import { feeFor } from "@/lib/domain/fees";
 
 // Presentation name of the composed demo account (payer + receiver identities).
 const ACCOUNT_NAME = "Nodo Software SRL";
@@ -60,6 +62,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span className="text-[17px] font-semibold tracking-[-0.03em]">continuum</span>
           </Link>
           <div className="flex items-center gap-2.5">
+            <Link href="/entrar" className="text-xs text-muted hover:text-ink">Vistas por rol</Link>
             <NetworkChip />
             <span className="flex size-9 items-center justify-center rounded-[10px] bg-ink text-xs font-semibold text-white">{initials(ACCOUNT_NAME)}</span>
           </div>
@@ -77,7 +80,7 @@ function Gate({ message }: { message: string }) {
         <h1 className="text-2xl font-semibold tracking-[-0.03em]">Cuenta demo</h1>
         <ErrorNote>{message}</ErrorNote>
         <div className="flex gap-2">
-          <Link href="/login" className="inline-flex h-11 items-center rounded-xl bg-ink px-4 text-sm font-semibold text-white">Ingresar</Link>
+          <Link href="/login?next=%2Fdemo" className="inline-flex h-11 items-center rounded-xl bg-ink px-4 text-sm font-semibold text-white">Ingresar</Link>
           <Link href="/entrar" className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold">Vistas por rol</Link>
         </div>
       </div>
@@ -95,7 +98,7 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
   const { incoming, outgoing } = splitStreams(roles, payer.streams ?? [], receiver.streams ?? []);
   const nameOf = (id: string) => users.find((u) => u.id === id)?.name ?? id;
   const available = sum(incoming, (s) => liveAvailable(s, now));
-  const inRate = sum(incoming.filter((s) => streaming(s, now)), ratePerSecond);
+  const inRate = sum(incoming.filter((s) => streaming(s, now) && liveVested(s, now) < Number(s.deposited)), ratePerSecond);
   const paid = sum(outgoing, (s) => Math.min(liveVested(s, now), Number(s.deposited)));
   const outRate = sum(outgoing.filter((s) => streaming(s, now) && liveVested(s, now) < Number(s.deposited)), ratePerSecond);
   const refresh = () => { payer.refresh(); receiver.refresh(); };
@@ -209,7 +212,7 @@ function Row({ name, sub, amount, note, earned, funded, dark = false, fresh = fa
       <span className={`flex size-10 items-center justify-center rounded-[11px] text-[13px] font-semibold ${dark ? "bg-[#1C1C20] text-[#E4E4E7]" : "bg-surface text-ink-2"}`}>{initials(name)}</span>
       <span className="flex min-w-0 flex-col gap-2">
         <span className="flex min-w-0 items-center gap-2">
-          <span className="whitespace-nowrap text-sm font-semibold">{name}</span>
+          <span className="truncate text-sm font-semibold">{name}</span>
           {fresh && <span className="inline-flex h-5 items-center rounded-full bg-ink px-[7px] text-[11px] font-semibold text-white">Nuevo</span>}
           <span className={`truncate text-xs ${dark ? "text-faint" : "text-subtle"}`}>{sub}</span>
         </span>
@@ -233,8 +236,9 @@ function Move({ move, outgoing, nameOf }: { move: Activity; outgoing: StreamView
   const text = move.kind === "withdraw" ? "Retiro de cobros"
     : move.kind === "create" ? (out ? `Contrato #${move.streamId} con ${nameOf(out.workerId)}` : `Contrato de cobro #${move.streamId}`)
     : move.kind === "topup" ? `Fondeo del contrato #${move.streamId}`
-    : move.kind === "cancel" ? `Cancelación del contrato #${move.streamId}` : "Movimiento";
-  const sign = move.kind === "withdraw" ? "+" : out && (move.kind === "create" || move.kind === "topup") ? "−" : "";
+    : move.kind === "cancel" ? `Cancelación del contrato #${move.streamId}`
+    : move.kind === "fee" ? "Comisión Continuum · 0,05%" : "Movimiento";
+  const sign = move.kind === "withdraw" ? "+" : move.kind === "fee" || out && (move.kind === "create" || move.kind === "topup") ? "−" : "";
   return (
     <li className="flex min-h-[60px] flex-wrap items-center gap-x-3.5 gap-y-1.5 border-t border-line-soft">
       <span className={`flex size-8 shrink-0 items-center justify-center rounded-full ${isIn ? "bg-celeste-soft text-celeste-ink" : "bg-surface text-ink"}`}>
@@ -246,8 +250,8 @@ function Move({ move, outgoing, nameOf }: { move: Activity; outgoing: StreamView
         <span className="text-sm font-medium">{text}</span>
         <span className="text-xs text-subtle">{dateLabel(Date.parse(move.createdAt) / 1000)} · {clock(Date.parse(move.createdAt) / 1000)}</span>
       </span>
-      <span className={`tnum text-sm font-semibold ${sign === "+" ? "text-celeste-ink" : "text-ink"}`}>{sign}{money(move.amount, 2)}</span>
-      <span className="min-w-[120px] text-right"><Hash hash={move.txHash} /></span>
+      <span className={`tnum text-sm font-semibold ${sign === "+" ? "text-celeste-ink" : "text-ink"}`}>{sign}{money(move.amount, move.kind === "fee" ? 4 : 2)}</span>
+      <span className="min-w-[120px] text-right">{move.txHash ? <Hash hash={move.txHash} /> : <span className="text-xs text-muted">Pendiente</span>}</span>
     </li>
   );
 }
@@ -317,6 +321,8 @@ function NewContract({ roles, defaultAmount, onClose, onCreated }: {
   const provider = roles.providers.find((u) => u.id === providerId) ?? roles.providers[0];
   const seconds = DURATIONS.find((d) => d.id === durationId)!.seconds;
   const valid = amount > 0 && !busy;
+  const fee = feeFor(String(amount));
+  const totalDebit = addAmounts(String(amount), fee);
 
   const create = async () => {
     if (!valid) return;
@@ -336,7 +342,7 @@ function NewContract({ roles, defaultAmount, onClose, onCreated }: {
   };
 
   return (
-    <Drawer title="Nuevo contrato" onClose={onClose}>
+    <Drawer title="Nuevo contrato" onClose={() => { if (!busy) onClose(); }}>
       {result ? (
         <Done title={`Contrato #${result.ids.join(", #")}`} subtitle={`${provider.name} ya está cobrando ${money(amount / seconds, 2)} / s`}
           hashes={[result.hash]} onClose={onClose} action="Ver en Pagás" />
@@ -374,6 +380,7 @@ function NewContract({ roles, defaultAmount, onClose, onCreated }: {
             <span className="text-[13px] text-faint">{provider.name} cobra</span>
             <span className="tnum text-4xl font-medium leading-none tracking-[-0.05em]">{money(amount / seconds, 2)}<span className="text-lg text-subtle"> / s</span></span>
             <span className="tnum border-t border-[#26262B] pt-3.5 text-sm text-faint">Depositás {money(amount)} ahora</span>
+            <span className="tnum text-xs text-faint">Comisión adicional 0,05%: {money(fee, 4)} · Total: {money(totalDebit, 4)}</span>
           </div>
           {error && <ErrorNote>{error}</ErrorNote>}
           <button type="button" onClick={create} disabled={!valid}
@@ -390,14 +397,16 @@ function NewContract({ roles, defaultAmount, onClose, onCreated }: {
 function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
   roles: DemoRoles; incoming: StreamView[]; now: number; available: number; onClose: () => void; onDone: () => void;
 }) {
-  const maxWhole = Math.floor(sum(incoming, (s) => availableCents(s, now)) / 100);
-  const [amount, setAmount] = useState(maxWhole);
+  const maxCents = sum(incoming, (s) => availableCents(s, now));
+  const maxAmount = maxCents / 100;
+  const [amountText, setAmountText] = useState(maxAmount.toFixed(2));
+  const amount = Number(amountText.replace(",", "."));
   const [destination, setDestination] = useState<"wallet" | "belo">("wallet");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ amount: number; hashes: string[] } | null>(null);
   const plan = planWithdrawal(incoming, amount, now);
-  const valid = plan.length > 0 && !busy;
+  const valid = /^\d+(?:[.,]\d{1,2})?$/.test(amountText) && plan.length > 0 && !busy;
   const a = liveParts(available);
 
   const submit = async () => {
@@ -413,6 +422,7 @@ function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
       setResult({ amount, hashes });
     } catch (e) {
       setError(hashes.length ? `${(e as Error).message} Se confirmaron ${hashes.length} de ${plan.length} retiros.` : (e as Error).message);
+      setAmountText("");
     } finally {
       setBusy(false);
       onDone();
@@ -420,9 +430,9 @@ function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
   };
 
   return (
-    <Drawer title="Retirar" onClose={onClose}>
+    <Drawer title="Retirar" onClose={() => { if (!busy) onClose(); }}>
       {result ? (
-        <Done title={money(result.amount)} subtitle={`retirados a ${destination === "wallet" ? "tu wallet" : "tu cuenta Belo"}`}
+        <Done title={money(result.amount, 2)} subtitle={`retirados a ${destination === "wallet" ? "tu wallet" : "tu cuenta Belo"}`}
           hashes={result.hashes} onClose={onClose} action="Listo" />
       ) : (
         <div className="flex flex-col gap-[22px]">
@@ -432,18 +442,18 @@ function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
           </div>
           <div className="flex flex-col gap-2.5">
             <label htmlFor="wd" className="text-sm font-semibold">Monto</label>
-            <div className={`flex h-14 items-center gap-1.5 rounded-[14px] border px-4 ${amount > maxWhole ? "border-danger" : "border-line"}`}>
+            <div className={`flex h-14 items-center gap-1.5 rounded-[14px] border px-4 ${amount > maxAmount ? "border-danger" : "border-line"}`}>
               <span className="text-xl text-faint">$</span>
-              <input id="wd" inputMode="numeric" autoComplete="off" value={groupWhole(amount)} onChange={(e) => setAmount(parseWhole(e.target.value))}
+              <input id="wd" inputMode="decimal" autoComplete="off" value={amountText} disabled={busy} onChange={(e) => setAmountText(e.target.value)}
                 className="tnum min-w-0 grow bg-transparent text-[22px] font-medium outline-none" />
               <span className="text-xs text-subtle">ARGt</span>
             </div>
             <div className="flex gap-2">
               {([["25 %", 0.25], ["50 %", 0.5], ["Todo", 1]] as const).map(([label, f]) => {
-                const v = Math.floor(maxWhole * f);
+                const v = Math.floor(maxCents * f) / 100;
                 const on = v === amount && v > 0;
                 return (
-                  <button key={label} type="button" aria-pressed={on} onClick={() => setAmount(v)}
+                  <button key={label} type="button" aria-pressed={on} disabled={busy} onClick={() => setAmountText(v.toFixed(2))}
                     className={`h-10 flex-1 rounded-full border text-sm font-medium ${on ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>{label}</button>
                 );
               })}
@@ -463,7 +473,7 @@ function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
           <button type="button" onClick={submit} disabled={!valid}
             className="flex h-14 items-center justify-center gap-2.5 rounded-[14px] bg-ink text-base font-semibold text-white disabled:bg-[#1F1F23] disabled:text-white/70">
             {busy && <Spinner />}
-            {busy ? "Enviando…" : amount > maxWhole ? "Supera lo disponible" : amount > 0 ? `Retirar ${money(amount)}` : "Ingresá un monto"}
+            {busy ? "Enviando…" : amount > maxAmount ? "Supera lo disponible" : valid ? `Retirar ${money(amount, 2)}` : "Ingresá un monto"}
           </button>
         </div>
       )}

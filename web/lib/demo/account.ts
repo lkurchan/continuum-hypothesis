@@ -1,5 +1,6 @@
 import type { DemoUser, StreamView } from "@/lib/domain/types";
 import { withdrawableAt } from "@/lib/domain/vesting";
+import { ExactDecimal } from "@/lib/domain/amounts";
 
 /**
  * The demo account buys and sells. The API keeps strict roles, so the account
@@ -23,7 +24,7 @@ export function splitStreams(roles: DemoRoles, payerStreams: StreamView[], recei
   return { incoming, outgoing };
 }
 
-const cents = (amount: string) => Math.floor(Number(amount) * 100);
+const cents = (amount: string | number) => new ExactDecimal(amount).mul(100).floor().toNumber();
 
 /** Whole cents withdrawable from a stream, measured at the last whole second. */
 export function availableCents(stream: StreamView, nowSec: number): number {
@@ -35,8 +36,9 @@ export function availableCents(stream: StreamView, nowSec: number): number {
  * an empty plan when the streams cannot cover the amount.
  */
 export function planWithdrawal(incoming: StreamView[], amount: number, nowSec: number): { streamId: string; amount: string }[] {
-  let rest = Math.floor(amount * 100);
-  if (rest <= 0) return [];
+  if (!Number.isFinite(amount)) return [];
+  let rest = cents(amount);
+  if (rest <= 0 || !Number.isSafeInteger(rest)) return [];
   const pool = incoming
     .map((s) => ({ id: s.id, cents: availableCents(s, nowSec) }))
     .filter((x) => x.cents > 0)

@@ -59,13 +59,13 @@ export default function CoverPage() {
 
         <div className="animate-enter flex flex-col items-center gap-4" style={{ "--i": 2 } as React.CSSProperties}>
           <p className="tnum flex items-baseline justify-center whitespace-nowrap font-medium leading-[0.9] tracking-[-0.065em]">
-            <span className="mr-[0.08em] text-[clamp(48px,6vw,96px)] text-subtle">$</span>
-            <span className="text-[clamp(96px,17vw,272px)]">{group(int)}</span>
-            <span className="text-[clamp(48px,6vw,96px)] text-subtle">,{dec}</span>
+            <span className="mr-[0.08em] text-[clamp(24px,6vw,96px)] text-subtle">$</span>
+            <span className="text-[clamp(48px,15vw,240px)]">{group(int)}</span>
+            <span className="text-[clamp(24px,6vw,96px)] text-subtle">,{dec}</span>
           </p>
           <span className="inline-flex items-center gap-2.5 text-[15px] text-faint">
             <span className="size-2 rounded-full bg-celeste animate-pulse-dot" />
-            cobrados este mes por un contrato de $2.400.000
+            Ejemplo · devengado este mes por un contrato de $2.400.000
           </span>
         </div>
 

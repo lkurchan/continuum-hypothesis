@@ -42,7 +42,7 @@ describe("HTTP contract", () => {
     const list = await (await streams(get("streams?userId=worker1"))).json();
     expect(list.find((s: { id: string }) => s.id === "2")).toMatchObject({ withdrawn: "50", deposited: "50", canceledAt: 1000, status: "canceled" });
     const payerActivity = await (await activity(get("activity?userId=platform"))).json();
-    expect(payerActivity.filter((a: { streamId: string }) => a.streamId === "2").map((a: { kind: string }) => a.kind)).toEqual(["create", "topup", "withdraw", "cancel", "withdraw"]);
+    expect(payerActivity.filter((a: { streamId: string }) => a.streamId === "2").map((a: { kind: string }) => a.kind)).toEqual(["create", "fee", "topup", "fee", "withdraw", "cancel", "withdraw"]);
     expect(payerActivity.every((a: { explorerUrl: string; note: string }) => a.explorerUrl === "" && a.note.includes("Simulación"))).toBe(true);
   });
   it("rejects missing, conflicting or unauthorized identities", async () => {
