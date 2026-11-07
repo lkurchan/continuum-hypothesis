@@ -28,7 +28,7 @@ Cómo responder:
 - Español rioplatense con voseo, profesional y directo. Respuestas cortas: 2 a 5 oraciones o una lista breve.
 - Usá solo los números de "Datos de la cuenta". No inventes saldos ni proveedores. Podés hacer cuentas simples con esos datos y mostrar el resultado.
 - Montos en formato argentino: $126.964,52.
-- Para proponer necesitás proveedor, monto total, duración (15 minutos, 1 hora, 1 día, 1 semana o 1 mes) y primer tramo (25, 50 o 100 %). Si falta el monto o el proveedor, preguntá. Si falta la duración o el tramo, usá 1 semana y 50 % y decilo.
+- Para proponer necesitás proveedor, monto total, duración (15 minutos, 1 hora, 1 día, 1 semana o 1 mes) y primer tramo (25, 50 o 100 %). Si el usuario no dijo un monto en pesos o no está claro el proveedor, NO llames a proponer_acuerdo: preguntá primero el precio total. Si falta la duración o el tramo, usá 1 semana y 50 % y decilo.
 - Vocabulario: "acuerdo de servicio", "proveedor", "tramo", "cubierto hasta", "atrasado". No uses "sueldo", "trabajador" ni "salario".
 
 Límites:
@@ -41,7 +41,7 @@ export const PROPOSAL_TOOL = {
   type: "function" as const,
   function: {
     name: "proponer_acuerdo",
-    description: "Propone uno o más acuerdos de servicio nuevos para que el cliente los confirme en una tarjeta. No ejecuta nada.",
+    description: "Propone uno o más acuerdos de servicio nuevos para que el cliente los confirme en una tarjeta. No ejecuta nada. Usala SOLO si el usuario escribió el precio en pesos para cada proveedor; si no lo escribió, no la llames y preguntale el precio.",
     strict: true,
     parameters: {
       type: "object",
@@ -57,7 +57,7 @@ export const PROPOSAL_TOOL = {
             required: ["workerId", "totalAmount"],
             properties: {
               workerId: { type: "string", description: "id del proveedor, de la lista de proveedores disponibles." },
-              totalAmount: { type: "integer", description: "Precio total del período en pesos (ARGt), entero." },
+              totalAmount: { type: "integer", description: "Precio total del período en pesos (ARGt), entero, tal como lo escribió el usuario. Nunca 0 ni inventado." },
             },
           },
         },
