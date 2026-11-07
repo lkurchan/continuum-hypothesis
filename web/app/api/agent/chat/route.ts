@@ -46,6 +46,9 @@ async function handlePOST(request: Request) {
   const model = process.env.OPENAI_MODEL?.trim();
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey || !model) return errorResponse("El asistente no está configurado: faltan OPENAI_API_KEY u OPENAI_MODEL.", 503);
+  const latestText = messages.at(-1)!.content.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const declinesProposal = /\b(?:no\s+(?:(?:quiero|necesito)\s+que\s+)?(?:me\s+)?(?:propongas|crees|armes|generes)|sin\s+(?:(?:crear|armar|generar|proponer)\s+)?(?:nuev[oa]s?\s+)?(?:propuestas?|acuerdos?))\b/i.test(latestText);
+  const allowProposal = isPayer && !declinesProposal;
 
   const client = new OpenAI({ apiKey });
   const encoder = new TextEncoder();
@@ -62,7 +65,8 @@ async function handlePOST(request: Request) {
             ...messages,
           ],
           // Reasoning models reject function tools on Chat Completions unless reasoning is off.
-          ...(isPayer ? { tools: [PROPOSAL_TOOL], parallel_tool_calls: false, reasoning_effort: "none" as const } : {}),
+          ...(isPayer ? { tools: [PROPOSAL_TOOL], tool_choice: allowProposal ? "auto" as const : "none" as const,
+            parallel_tool_calls: false, reasoning_effort: "none" as const } : {}),
         });
         let toolArgs = "";
         let wrote = false;
@@ -72,6 +76,10 @@ async function handlePOST(request: Request) {
           for (const call of delta?.tool_calls ?? []) toolArgs += call.function?.arguments ?? "";
         }
         if (!toolArgs) return;
+        if (!allowProposal) {
+          if (!wrote) write("No generé ninguna propuesta. Podés consultar la cobertura o el resumen de tus acuerdos.");
+          return;
+        }
         try {
           const proposal = toProposal(users, JSON.parse(toolArgs), messages.filter((m) => m.role === "user").map((m) => m.content).join("\n"));
           if (!wrote) write("Te armé la propuesta. Revisala y confirmala abajo.");

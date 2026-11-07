@@ -12,3 +12,4 @@ Spec: `docs/superpowers/specs/2026-11-07-asistente-pyme.md`. Es el P1 del pivot 
 8. [x] Revisar la integración con auth, completar el guard de reputación y el destino del login, y cubrir streaming y propuestas sin ejecutar pagos. No modificar componentes ni páginas.
 9. [ ] Completar la prueba del chat real. PR #9 mergeado con checks aprobados; login integrado en PR #14 y variables de proveedor y auth configuradas en Production.
 10. [x] Agregar diagnóstico del error del proveedor observado en Production con logs limitados a metadatos y normalización de las variables, sin exponer conversaciones ni secretos.
+11. [x] Evitar que el modelo repita una propuesta después de que el usuario pide explícitamente solo una consulta. Tests de varios turnos con rechazo, reactivación de propuestas y tool-call inesperado sin texto.
