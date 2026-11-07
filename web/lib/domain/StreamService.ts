@@ -3,7 +3,10 @@ import type { Repository } from "@/lib/db/Repository";
 import { addAmounts, compareAmounts, normalizeAmount, positiveAmount } from "./amounts";
 import { DomainError, requireCondition } from "./errors";
 import type { Activity, ActivityKind, Amount, DemoUser, StreamView } from "./types";
+import { feeFor } from "./fees";
 import { validatePeriod } from "./vesting";
+
+const FEE_NOTE = "Comisión Continuum 0,05%";
 
 export type CreateInput = { payerId: string; items: { workerId: string; totalAmount: Amount; initialDeposit: Amount; label?: string }[]; start: number; end: number };
 
@@ -44,6 +47,26 @@ export class StreamService {
     }
   }
 
+  private async requireFunds(payer: DemoUser, deposit: Amount) {
+    const required = addAmounts(deposit, feeFor(deposit));
+    if (required === "0") return;
+    requireCondition(compareAmounts(await this.gateway.balanceOf(payer.address), required) >= 0,
+      "Saldo insuficiente para cubrir el depósito y la comisión del 0,05%.", 409);
+  }
+  // Runs after the confirmed deposit. Never throws: the provider must keep the funds even if our fee fails.
+  private async chargeFee(payer: DemoUser, streamId: string, deposit: Amount): Promise<string | undefined> {
+    const fee = feeFor(deposit);
+    if (fee === "0") return undefined;
+    let txHash: string | undefined;
+    try { txHash = (await this.gateway.transferFee(payer, fee)).txHash; } catch { txHash = undefined; }
+    const row = txHash
+      ? { ...this.activityRow(streamId, "fee", fee, txHash, payer.id),
+        note: this.mode === "mock" ? `${FEE_NOTE}. Simulación local: no es una transacción onchain.` : FEE_NOTE }
+      : { ...this.activityRow(streamId, "fee", fee, "", payer.id), explorerUrl: "", note: "fee pendiente" };
+    try { await this.repo.recordActivity(row); } catch { /* The deposit already succeeded; the fee row is best effort. */ }
+    return txHash;
+  }
+
   users() { return this.repo.users(); }
   async streams(userId: string): Promise<StreamView[]> {
     await this.user(userId);
@@ -51,7 +74,12 @@ export class StreamService {
     return Promise.all(records.map(async record => ({ ...await this.gateway.getStream(record.id), payerId: record.payerId,
       workerId: record.workerId, ...(record.label ? { label: record.label } : {}) })));
   }
-  async activity(userId: string) { await this.user(userId); return this.repo.activity(userId); }
+  async activity(userId: string) {
+    const user = await this.user(userId);
+    const rows = await this.repo.activity(userId);
+    // The commission is the client's cost; the provider never sees it.
+    return user.role === "worker" ? rows.filter(row => row.kind !== "fee") : rows;
+  }
 
   create(input: CreateInput, userId = input.payerId) {
     return this.mutate(async () => {
@@ -69,13 +97,17 @@ export class StreamService {
         const label = item.label?.trim().slice(0, 80) || undefined;
         return { worker, totalAmount, initialDeposit, label };
       }));
+      const deposit = items.reduce((sum, item) => addAmounts(sum, item.initialDeposit), "0");
+      await this.requireFunds(payer, deposit);
       const result = await this.gateway.createStreams(payer, items.map(({ worker, totalAmount, initialDeposit }) => ({ worker, totalAmount, initialDeposit })), input.start, input.end);
       requireCondition(result.streamIds.length === items.length, `La operación ${result.txHash} devolvió una cantidad inesperada de streams; revisá el hash antes de repetir.`, 503);
       const records = result.streamIds.map((id, i) => ({ id, payerId: payer.id, workerId: items[i].worker.id, ...(items[i].label ? { label: items[i].label } : {}),
         createdTx: result.txHash, createdAt: new Date(this.now() * 1000).toISOString() }));
       const activity = result.streamIds.map((id, i) => this.activityRow(id, "create", items[i].initialDeposit, result.txHash, payer.id));
       await this.saveAfterTransaction(result.txHash, () => this.repo.recordCreation(records, activity));
-      return result;
+      // One fee for the whole batch, charged only after the deposit is confirmed and saved.
+      const feeTxHash = await this.chargeFee(payer, result.streamIds[0], deposit);
+      return { ...result, ...(feeTxHash ? { feeTxHash } : {}) };
     });
   }
 
@@ -86,9 +118,11 @@ export class StreamService {
       const stream = await this.gateway.getStream(id);
       requireCondition(!stream.canceledAt, "El stream está cancelado.", 409);
       requireCondition(compareAmounts(addAmounts(stream.deposited, value), stream.totalAmount) <= 0, "El fondeo excede el total.", 409);
+      await this.requireFunds(user, value);
       const result = await this.gateway.topUp(user, id, value);
       await this.saveAfterTransaction(result.txHash, () => this.repo.recordActivity(this.activityRow(id, "topup", value, result.txHash, user.id)));
-      return result;
+      const feeTxHash = await this.chargeFee(user, id, value);
+      return { ...result, ...(feeTxHash ? { feeTxHash } : {}) };
     });
   }
 
