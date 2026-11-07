@@ -31,6 +31,13 @@ export function availableCents(stream: StreamView, nowSec: number): number {
   return Math.max(0, cents(withdrawableAt(stream, Math.floor(nowSec))));
 }
 
+/** Prefer a funded demo account for the operator's small withdrawal check. */
+export function withdrawalReceiver(roles: DemoRoles, streams: StreamView[], nowSec: number): DemoUser {
+  const balance = (user: DemoUser) => streams.filter(s => s.workerId === user.id)
+    .reduce((sum, s) => sum + availableCents(s, nowSec), 0);
+  return roles.providers.reduce((best, user) => balance(user) > balance(best) ? user : best, roles.receiver);
+}
+
 /**
  * Splits a withdrawal across incoming streams, largest balance first. Returns
  * an empty plan when the streams cannot cover the amount.

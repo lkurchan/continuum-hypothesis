@@ -8,11 +8,12 @@ import {
   parseWhole, ratePerSecond,
 } from "@/components/ui/format";
 import { useAccount, useNow } from "@/components/ui/hooks";
-import { ErrorNote, Hash, MockNotice, NetworkChip } from "@/components/ui/kit";
-import { availableCents, pickRoles, planWithdrawal, splitStreams, type DemoRoles } from "@/lib/demo/account";
+import { ErrorNote, Hash, Icon, MockNotice, NetworkChip } from "@/components/ui/kit";
+import { availableCents, pickRoles, planWithdrawal, splitStreams, withdrawalReceiver, type DemoRoles } from "@/lib/demo/account";
 import type { Activity, DemoUser, StreamView } from "@/lib/domain/types";
 import { addAmounts } from "@/lib/domain/amounts";
 import { feeFor } from "@/lib/domain/fees";
+import { presentationAt } from "@/lib/demo/presentation";
 
 // Presentation name of the composed demo account (payer + receiver identities).
 const ACCOUNT_NAME = "Nodo Software SRL";
@@ -64,7 +65,9 @@ function Shell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2.5">
             <Link href="/entrar" className="text-xs text-muted hover:text-ink">Vistas por rol</Link>
             <NetworkChip />
-            <span className="flex size-9 items-center justify-center rounded-[10px] bg-ink text-xs font-semibold text-white">{initials(ACCOUNT_NAME)}</span>
+            <span role="img" aria-label={`Perfil de ${ACCOUNT_NAME}`} className="flex size-9 items-center justify-center rounded-[10px] bg-ink text-celeste-dark ring-1 ring-white/10">
+              <Icon name="building" size={20} strokeWidth={1.7} />
+            </span>
           </div>
         </div>
       </header>
@@ -94,6 +97,8 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
   const now = useNow(100);
   const [panel, setPanel] = useState<null | "new" | "withdraw">(null);
   const [createdIds, setCreatedIds] = useState<string[]>([]);
+  const [presentation, setPresentation] = useState(true);
+  const preview = presentationAt(now);
 
   const { incoming, outgoing } = splitStreams(roles, payer.streams ?? [], receiver.streams ?? []);
   const nameOf = (id: string) => users.find((u) => u.id === id)?.name ?? id;
@@ -114,14 +119,24 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
   const loadError = payer.error ?? receiver.error;
   const loading = !payer.streams || !receiver.streams;
 
-  const a = liveParts(available);
-  const p = liveParts(paid);
+  const a = liveParts(presentation ? preview.earned : available);
+  const p = liveParts(presentation ? preview.paid : paid);
+  const incomingCount = presentation ? preview.incoming.length : incoming.length;
+  const outgoingCount = presentation ? preview.outgoing.length : outgoing.length;
 
   return (
     <Shell>
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-[32px] font-semibold tracking-[-0.04em]">{ACCOUNT_NAME}</h1>
-        <span className="text-sm text-muted">Compra y vende servicios</span>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[32px] font-semibold tracking-[-0.04em]">{ACCOUNT_NAME}</h1>
+          <span className="text-sm text-muted">Compra y vende servicios</span>
+        </div>
+        <div aria-label="Vista de importes" className="inline-flex rounded-full border border-line bg-white p-1">
+          {([[true, "Presentación"], [false, "Saldo real"]] as const).map(([value, label]) => (
+            <button key={label} type="button" aria-pressed={presentation === value} onClick={() => setPresentation(value)}
+              className={`rounded-full px-4 py-2 text-xs font-medium ${presentation === value ? "bg-ink text-white" : "text-muted"}`}>{label}</button>
+          ))}
+        </div>
       </div>
       {loadError && <ErrorNote>{loadError}</ErrorNote>}
 
@@ -131,40 +146,43 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
             <h2 id="in-t" className="flex items-center gap-2.5 text-base font-semibold">
               <span className="size-2 rounded-full bg-celeste-dark animate-pulse-dot" />Cobrás
             </h2>
-            <span className="text-[13px] text-faint">{incoming.length} {incoming.length === 1 ? "contrato" : "contratos"}</span>
+            <span className="text-[13px] text-faint">{incomingCount} {incomingCount === 1 ? "contrato" : "contratos"}</span>
           </div>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex min-w-0 flex-col gap-2.5">
               <span className="tnum text-[clamp(44px,4.8vw,62px)] font-medium leading-none tracking-[-0.055em]">
                 ${a.int}<span className="text-subtle">,{a.cents}</span>
               </span>
-              <span className="tnum text-sm text-faint">disponible · <span className="text-celeste-dark">+{money(inRate, 2)} / s</span></span>
+              <span className="tnum text-sm text-faint">{presentation ? "devengado este mes" : "disponible"} · <span className="text-celeste-dark">+{money(presentation ? preview.inRate : inRate, 2)} / s</span></span>
             </div>
             <button type="button" onClick={() => setPanel("withdraw")} disabled={loading}
               className="h-12 rounded-xl bg-white px-[22px] text-[15px] font-semibold text-ink disabled:opacity-50">Retirar</button>
           </div>
           <ul>
-            {loading && <li className="h-[72px] border-t border-[#222226]" />}
-            {incoming.map((s) => (
+            {presentation ? preview.incoming.map(c => (
+              <Row key={c.name} dark name={c.name} sub={c.service} amount={money(c.earned, 2)}
+                note="Servicio mensual" earned={preview.progress} funded={1} />
+            )) : incoming.map((s) => (
               <Row key={s.id} dark name={s.label ?? `Contrato #${s.id}`} sub={`#${s.id} · ${durationLabel(s.end - s.start)}`}
                 amount={money(liveVested(s, now), 2)} note={untilLabel(s, now)}
                 earned={(now - s.start) / (s.end - s.start)} funded={Number(s.deposited) / Number(s.totalAmount)} />
             ))}
-            {!loading && incoming.length === 0 && <li className="border-t border-[#222226] py-5 text-sm text-faint">Sin contratos de cobro.</li>}
+            {!presentation && loading && <li className="h-[72px] border-t border-[#222226]" />}
+            {!presentation && !loading && incoming.length === 0 && <li className="border-t border-[#222226] py-5 text-sm text-faint">Sin contratos de cobro.</li>}
           </ul>
         </section>
 
         <section aria-labelledby="out-t" className="flex flex-col gap-[22px] rounded-[24px] border border-line bg-white px-7 pb-2.5 pt-[26px]">
           <div className="flex items-center justify-between gap-3">
             <h2 id="out-t" className="text-base font-semibold">Pagás</h2>
-            <span className="text-[13px] text-muted">{outgoing.length} {outgoing.length === 1 ? "contrato" : "contratos"}</span>
+            <span className="text-[13px] text-muted">{outgoingCount} {outgoingCount === 1 ? "contrato" : "contratos"}</span>
           </div>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex min-w-0 flex-col gap-2.5">
               <span className="tnum text-[clamp(44px,4.8vw,62px)] font-medium leading-none tracking-[-0.055em]">
                 ${p.int}<span className="text-faint">,{p.cents}</span>
               </span>
-              <span className="tnum text-sm text-muted">devengado a proveedores · <span className="text-ink">−{money(outRate, 2)} / s</span></span>
+              <span className="tnum text-sm text-muted">devengado a proveedores · <span className="text-ink">−{money(presentation ? preview.outRate : outRate, 2)} / s</span></span>
             </div>
             <button type="button" onClick={() => setPanel("new")}
               className="inline-flex h-12 items-center gap-2 rounded-xl bg-ink px-5 text-[15px] font-semibold text-white">
@@ -173,19 +191,22 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
             </button>
           </div>
           <ul>
-            {loading && <li className="h-[72px] border-t border-line-soft" />}
-            {[...outgoing].sort((x, y) => Number(y.id) - Number(x.id)).map((s) => (
+            {presentation ? preview.outgoing.map(c => (
+              <Row key={c.name} name={c.name} sub={c.service} amount={money(c.earned, 2)}
+                note="Servicio mensual" earned={preview.progress} funded={1} />
+            )) : [...outgoing].sort((x, y) => Number(y.id) - Number(x.id)).map((s) => (
               <Row key={s.id} name={nameOf(s.workerId)} sub={s.label ?? `#${s.id} · ${durationLabel(s.end - s.start)}`}
                 fresh={createdIds.includes(s.id)} amount={money(Math.min(liveVested(s, now), Number(s.deposited)), 2)}
                 note={untilLabel(s, now)} earned={(now - s.start) / (s.end - s.start)} funded={Number(s.deposited) / Number(s.totalAmount)} />
             ))}
-            {!loading && outgoing.length === 0 && <li className="border-t border-line-soft py-5 text-sm text-muted">Todavía no pagás a ningún proveedor.</li>}
+            {!presentation && loading && <li className="h-[72px] border-t border-line-soft" />}
+            {!presentation && !loading && outgoing.length === 0 && <li className="border-t border-line-soft py-5 text-sm text-muted">Todavía no pagás a ningún proveedor.</li>}
           </ul>
         </section>
       </div>
 
       <section aria-labelledby="mov-t" className="rounded-[20px] border border-line bg-white px-[22px] py-1.5">
-        <h2 id="mov-t" className="flex min-h-[52px] items-center text-base font-semibold">Movimientos</h2>
+        <h2 id="mov-t" className="flex min-h-[52px] items-center text-base font-semibold">{onchain ? "Movimientos onchain" : "Movimientos"}</h2>
         <ul>
           {moves.map((m) => <Move key={m.id} move={m} nameOf={nameOf} outgoing={outgoing} />)}
           {moves.length === 0 && <li className="border-t border-line-soft py-5 text-sm text-muted">Sin movimientos todavía.</li>}
@@ -194,10 +215,10 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
 
       {panel === "new" && (
         <NewContract roles={roles} defaultAmount={onchain ? 1 : 90000} onClose={() => setPanel(null)}
-          onCreated={(ids) => { setCreatedIds((x) => [...ids, ...x]); refresh(); }} />
+          onCreated={(ids) => { setCreatedIds((x) => [...ids, ...x]); setPresentation(false); refresh(); }} />
       )}
       {panel === "withdraw" && (
-        <Withdraw roles={roles} incoming={incoming} now={now} available={available} onClose={() => setPanel(null)} onDone={refresh} />
+        <Withdraw users={users} receiver={withdrawalReceiver(roles, payer.streams ?? [], now)} now={now} onClose={() => setPanel(null)} onDone={refresh} />
       )}
     </Shell>
   );
@@ -394,19 +415,33 @@ function NewContract({ roles, defaultAmount, onClose, onCreated }: {
   );
 }
 
-function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
-  roles: DemoRoles; incoming: StreamView[]; now: number; available: number; onClose: () => void; onDone: () => void;
+function Withdraw({ users, receiver, now, onClose, onDone }: {
+  users: DemoUser[]; receiver: DemoUser; now: number; onClose: () => void; onDone: () => void;
 }) {
+  const [receiverId, setReceiverId] = useState(receiver.id);
+  const workers = users.filter(u => u.role === "worker");
+  const selected = workers.find(u => u.id === receiverId) ?? receiver;
+  return <WithdrawalAccount key={selected.id} receiver={selected} workers={workers} onSelect={setReceiverId}
+    now={now} onClose={onClose} onDone={onDone} />;
+}
+
+function WithdrawalAccount({ receiver, workers, onSelect, now, onClose, onDone }: {
+  receiver: DemoUser; workers: DemoUser[]; onSelect: (id: string) => void;
+  now: number; onClose: () => void; onDone: () => void;
+}) {
+  const account = useAccount(receiver.id);
+  const incoming = (account.streams ?? []).filter(s => s.workerId === receiver.id);
+  const available = sum(incoming, s => liveAvailable(s, now));
   const maxCents = sum(incoming, (s) => availableCents(s, now));
   const maxAmount = maxCents / 100;
-  const [amountText, setAmountText] = useState(maxAmount.toFixed(2));
+  const [amountText, setAmountText] = useState("0.10");
   const amount = Number(amountText.replace(",", "."));
   const [destination, setDestination] = useState<"wallet" | "belo">("wallet");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ amount: number; hashes: string[] } | null>(null);
   const plan = planWithdrawal(incoming, amount, now);
-  const valid = /^\d+(?:[.,]\d{1,2})?$/.test(amountText) && plan.length > 0 && !busy;
+  const valid = /^\d+(?:[.,]\d{1,2})?$/.test(amountText) && plan.length > 0 && !busy && !account.error;
   const a = liveParts(available);
 
   const submit = async () => {
@@ -416,7 +451,7 @@ function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
     const hashes: string[] = [];
     try {
       for (const step of plan) {
-        const { txHash } = await api.withdraw(roles.receiver.id, step.streamId, step.amount, destination);
+        const { txHash } = await api.withdraw(receiver.id, step.streamId, step.amount, destination);
         hashes.push(txHash);
       }
       setResult({ amount, hashes });
@@ -425,6 +460,7 @@ function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
       setAmountText("");
     } finally {
       setBusy(false);
+      account.refresh();
       onDone();
     }
   };
@@ -436,9 +472,17 @@ function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
           hashes={result.hashes} onClose={onClose} action="Listo" />
       ) : (
         <div className="flex flex-col gap-[22px]">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="withdraw-account" className="text-sm font-semibold">Cuenta de cobro</label>
+            <select id="withdraw-account" value={receiver.id} disabled={busy} onChange={e => onSelect(e.target.value)}
+              className="h-12 rounded-xl border border-line bg-white px-3 text-sm">
+              {workers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+          </div>
           <div className="flex flex-col gap-1.5 rounded-[18px] bg-ink p-5 text-white">
-            <span className="flex items-center gap-2 text-[13px] text-faint"><span className="size-[7px] rounded-full bg-celeste-dark animate-pulse-dot" />Disponible</span>
+            <span className="flex items-center gap-2 text-[13px] text-faint"><span className="size-[7px] rounded-full bg-celeste-dark animate-pulse-dot" />Saldo real para retirar</span>
             <span className="tnum text-4xl font-medium leading-none tracking-[-0.05em]">${a.int}<span className="text-subtle">,{a.cents}</span></span>
+            <span className="text-xs text-faint">{account.streams ? "ARGt disponibles en Arbitrum" : "Consultando saldo…"}</span>
           </div>
           <div className="flex flex-col gap-2.5">
             <label htmlFor="wd" className="text-sm font-semibold">Monto</label>
@@ -449,27 +493,26 @@ function Withdraw({ roles, incoming, now, available, onClose, onDone }: {
               <span className="text-xs text-subtle">ARGt</span>
             </div>
             <div className="flex gap-2">
-              {([["25 %", 0.25], ["50 %", 0.5], ["Todo", 1]] as const).map(([label, f]) => {
-                const v = Math.floor(maxCents * f) / 100;
+              {([0.1, 0.25, 1] as const).map((v) => {
                 const on = v === amount && v > 0;
                 return (
-                  <button key={label} type="button" aria-pressed={on} disabled={busy} onClick={() => setAmountText(v.toFixed(2))}
-                    className={`h-10 flex-1 rounded-full border text-sm font-medium ${on ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>{label}</button>
+                  <button key={v} type="button" aria-pressed={on} disabled={busy || v > maxAmount} onClick={() => setAmountText(v.toFixed(2))}
+                    className={`h-10 flex-1 rounded-full border text-sm font-medium disabled:opacity-40 ${on ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>{money(v, 2)}</button>
                 );
               })}
             </div>
           </div>
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2.5 text-sm font-semibold">A</legend>
-            {([["wallet", "Tu wallet", roles.receiver.address], ["belo", "Cuenta Belo", roles.receiver.beloAddress]] as const).map(([id, label, address]) => (
-              <button key={id} type="button" aria-pressed={destination === id} disabled={!address} onClick={() => setDestination(id)}
+            {([["wallet", "Tu wallet", receiver.address], ["belo", "Cuenta Belo", receiver.beloAddress]] as const).map(([id, label, address]) => (
+              <button key={id} type="button" aria-pressed={destination === id} disabled={busy || !address} onClick={() => setDestination(id)}
                 className={`flex min-h-[60px] flex-col justify-center gap-0.5 rounded-[14px] bg-white px-3.5 py-2.5 text-left disabled:opacity-40 ${choice(destination === id)}`}>
                 <span className="text-sm font-semibold">{label}</span>
                 <span className="font-mono text-xs text-subtle">{address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "Sin dirección configurada"}</span>
               </button>
             ))}
           </fieldset>
-          {error && <ErrorNote>{error}</ErrorNote>}
+          {(error || account.error) && <ErrorNote>{error || account.error}</ErrorNote>}
           <button type="button" onClick={submit} disabled={!valid}
             className="flex h-14 items-center justify-center gap-2.5 rounded-[14px] bg-ink text-base font-semibold text-white disabled:bg-[#1F1F23] disabled:text-white/70">
             {busy && <Spinner />}

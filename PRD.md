@@ -77,6 +77,8 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 
 ### 6.1 Reglas para que el módulo del trabajador sea integrable
 
+La vista `/demo` permite alternar “Presentación” (cifras ilustrativas grandes para el pitch) y “Saldo real”. Los paneles de operación y el historial siempre usan datos de la API. El retiro permite elegir la cuenta demo y propone 0,10 ARGt; ninguna cifra ilustrativa se usa para firmar una transacción.
+
 Hoy funciona standalone, pero lo construimos como si un host (Belo) fuera a abrirlo en un webview:
 - `app/(worker)/` tiene **su propio layout** y no depende de navegación, header ni estado global de la app ni de `/payer`.
 - El usuario se identifica por `userId`. Un host podría pasarlo, o pasar un token en el futuro, sin cambiar las pantallas.

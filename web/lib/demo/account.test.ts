@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DemoUser, StreamView } from "@/lib/domain/types";
-import { availableCents, pickRoles, planWithdrawal, splitStreams } from "./account";
+import { availableCents, pickRoles, planWithdrawal, splitStreams, withdrawalReceiver } from "./account";
 
 const user = (id: string, role: DemoUser["role"]): DemoUser => ({ id, name: id, role, address: `0x${"1".repeat(40)}` });
 const users = [user("worker2", "worker"), user("platform", "payer"), user("worker1", "worker")];
@@ -8,6 +8,20 @@ const users = [user("worker2", "worker"), user("platform", "payer"), user("worke
 const stream = (id: string, workerId: string, deposited: string, withdrawn = "0"): StreamView => ({
   id, payerId: "platform", workerId, totalAmount: "1000", deposited, withdrawn,
   start: 0, end: 1000, canceledAt: null, status: "streaming",
+});
+
+describe("withdrawalReceiver", () => {
+  it("selects a worker with real withdrawable funds, ignoring already withdrawn funds", () => {
+    const roles = pickRoles(users)!;
+    const streams = [stream("0", "worker1", "100", "100"), stream("1", "worker2", "1")];
+    expect(withdrawalReceiver(roles, streams, 500).id).toBe("worker2");
+    expect(planWithdrawal(streams.filter(s => s.workerId === "worker2"), 0.1, 500)).toEqual([{ streamId: "1", amount: "0.10" }]);
+  });
+
+  it("keeps the configured receiver when there are no available funds", () => {
+    const roles = pickRoles(users)!;
+    expect(withdrawalReceiver(roles, [], 500).id).toBe("worker1");
+  });
 });
 
 describe("pickRoles", () => {

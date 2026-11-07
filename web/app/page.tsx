@@ -65,7 +65,7 @@ export default function CoverPage() {
           </p>
           <span className="inline-flex items-center gap-2.5 text-[15px] text-faint">
             <span className="size-2 rounded-full bg-celeste animate-pulse-dot" />
-            Ejemplo · devengado este mes por un contrato de $2.400.000
+            Devengado este mes por un contrato de $2.400.000
           </span>
         </div>
 
