@@ -1,5 +1,5 @@
-// GET /api/users
-// Body: none. Success response: DemoUser[].
+import { respond } from "@/lib/domain/http";
+
 export async function GET() {
-  return Response.json({ error: "not implemented" }, { status: 501 });
+  return respond(({ service }) => service.users());
 }
