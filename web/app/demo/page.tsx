@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/components/ui/api";
 import {
   clock, dateLabel, durationLabel, initials, liveParts, money,
@@ -10,8 +10,13 @@ import { useAccount, useNow } from "@/components/ui/hooks";
 import { ErrorNote, Hash, Icon } from "@/components/ui/kit";
 import { availableCents, pickRoles, planWithdrawal, splitStreams, withdrawalReceiver, type DemoRoles } from "@/lib/demo/account";
 import type { Activity, DemoUser, StreamView } from "@/lib/domain/types";
-import { addAmounts } from "@/lib/domain/amounts";
+import { addAmounts, compareAmounts } from "@/lib/domain/amounts";
 import { feeFor } from "@/lib/domain/fees";
+import { ReputationCard } from "@/components/demo/ReputationCard";
+import { FundingPanel, fundingLabel } from "@/components/demo/FundingPanel";
+import { fundingAmounts } from "@/lib/demo/funding";
+import { fundingView } from "@/components/ui/agreement";
+import { liveVested } from "@/components/ui/format";
 import { presentationAt } from "@/lib/demo/presentation";
 import { contractTerms, type DurationUnit } from "@/lib/demo/contract-form";
 import { Bubble, Typing, useChat } from "@/components/ui/chat";
@@ -21,7 +26,7 @@ import { ProposalCard } from "@/components/payer/ProposalCard";
 // Presentation name of the composed demo account (payer + receiver identities).
 const ACCOUNT_NAME = "Acosta Servicios SRL";
 type View = "inicio" | "copiloto" | "contratos";
-type DisplayContract = { name: string; service: string; monthly: number; earned: number; direction: "in" | "out"; period?: number; deposited?: number };
+type DisplayContract = { name: string; service: string; monthly: number; earned: number; direction: "in" | "out"; period?: number; deposited?: number; stream?: StreamView; clientId?: string };
 const ACTION_STYLE = "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 text-[15px] font-semibold text-white transition hover:opacity-85 disabled:opacity-40";
 const compactMoney = (value: string | number) => {
   const n = Math.abs(Number(value));
@@ -59,7 +64,7 @@ function Shell({ children, view = "inicio", onNavigate }: { children: React.Reac
             </svg>
             <span className="text-[17px] font-semibold tracking-[-0.03em]">continuum</span>
           </Link>
-          <nav aria-label="Navegación principal" className="order-last flex w-full justify-center gap-1 sm:order-none sm:w-auto">
+          <nav aria-label="Navegación principal" className="order-last flex w-full justify-center gap-4 sm:order-none sm:w-auto sm:gap-8">
             {([["inicio", "Inicio"], ["contratos", "Contratos"], ["copiloto", "Copiloto"]] as const).map(([id, label]) => (
               <button key={id} type="button" aria-current={view === id ? "page" : undefined} onClick={() => onNavigate?.(id)}
                 className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium ${view === id ? "bg-ink text-white" : "text-muted hover:bg-surface"}`}>
@@ -99,8 +104,9 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
   const receiver = useAccount(roles.receiver.id);
   const now = useNow(100);
   const [view, setView] = useState<View>("inicio");
-  const [panel, setPanel] = useState<null | "new" | "withdraw">(null);
-  const [detail, setDetail] = useState<DisplayContract | null>(null);
+  const [panel, setPanel] = useState<null | "new" | "withdraw" | "funding">(null);
+  const [selectedDetail, setDetail] = useState<DisplayContract | null>(null);
+  const [fundingBusy, setFundingBusy] = useState(false);
   const [created, setCreated] = useState<DisplayContract[]>([]);
   const preview = presentationAt(now);
   const { outgoing } = splitStreams(roles, payer.streams ?? [], receiver.streams ?? []);
@@ -112,19 +118,39 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
       .filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)))
       .sort((x, y) => y.createdAt.localeCompare(x.createdAt)).slice(0, 5);
   }, [payer.activity, receiver.activity]);
+  const realContracts: DisplayContract[] = (payer.streams ?? []).map(remote => {
+    const cached = created.find(c => c.stream?.id === remote.id)?.stream;
+    const stream = cached && remote.canceledAt === null && compareAmounts(cached.deposited, remote.deposited) > 0 ? cached : remote;
+    return ({
+    name: nameOf(stream.workerId), service: stream.label ?? `Contrato #${stream.id}`, monthly: Number(stream.totalAmount), earned: liveVested(stream, now),
+    direction: "out", period: stream.end - stream.start, deposited: Number(stream.deposited), stream,
+  }); });
+  const incomingContracts: DisplayContract[] = (receiver.streams ?? []).filter(s => s.payerId !== roles.payer.id).map(stream => ({
+    name: nameOf(stream.payerId), service: stream.label ?? `Contrato #${stream.id}`, monthly: Number(stream.totalAmount), earned: liveVested(stream, now), direction: "in", period: stream.end - stream.start, deposited: Number(stream.deposited), stream, clientId: stream.payerId,
+  }));
   const contracts: DisplayContract[] = [
     ...preview.incoming.map(c => ({ ...c, direction: "in" as const })),
-    ...preview.outgoing.map(c => ({ ...c, direction: "out" as const })), ...created,
+    ...preview.outgoing.map(c => ({ ...c, direction: "out" as const })), ...realContracts, ...incomingContracts,
+    ...created.filter(c => !realContracts.some(r => r.stream?.id === c.stream?.id)),
   ];
+  const detail = selectedDetail?.stream ? contracts.find(c => c.stream?.id === selectedDetail.stream?.id) ?? selectedDetail : selectedDetail;
+  const attention = realContracts.filter(c => c.stream && ["por_vencer", "atrasado"].includes(fundingView(c.stream, now).state));
   const loading = !payer.streams || !receiver.streams;
   const navigate = (next: View) => { setView(next); setDetail(null); };
 
   return (
     <Shell view={view} onNavigate={navigate}>
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-[32px] font-semibold tracking-[-0.04em]">{ACCOUNT_NAME}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col items-start gap-1">
+          <h1 className="text-[32px] font-semibold tracking-[-0.04em]">{ACCOUNT_NAME}</h1>
+
+        </div>
+        {attention.length > 0 && <button type="button" onClick={() => setPanel("funding")} className="inline-flex min-h-10 items-center gap-2 py-2 text-sm font-medium text-ink underline decoration-line underline-offset-4 transition hover:decoration-ink">
+          Completar pagos <span className="text-muted">({attention.length})</span><Icon name="arrow" size={15} />
+        </button>}
       </div>
       {(payer.error || receiver.error) && <ErrorNote>{payer.error || receiver.error}</ErrorNote>}
+
       <div hidden={view !== "inicio"}>
         <div className="grid gap-4 lg:grid-cols-2">
           {(["in", "out"] as const).map(direction => {
@@ -146,8 +172,9 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
               <button type="button" onClick={() => setPanel(dark ? "withdraw" : "new")} disabled={dark && loading} className={`${ACTION_STYLE} ${dark ? "!bg-white !text-ink" : ""}`}>
                 <Icon name={dark ? "in" : "plus"} size={18} />{dark ? "Retirar" : "Nuevo contrato"}
               </button>
-              <ul>{list.map(c => <Row key={c.name + c.service} dark={dark} name={c.name} sub={c.service} amount={money(c.earned, 2)}
-                note={c.period ? durationLabel(c.period) : "Servicio mensual"} earned={c.period ? 0 : preview.progress} funded={c.deposited === undefined ? 1 : c.deposited / c.monthly} onClick={() => setDetail(c)} />)}</ul>
+              <ul>{list.slice(0, 3).map(c => <Row key={c.name + c.service} dark={dark} name={c.name} sub={c.service} amount={money(c.earned, 2)}
+                note={c.stream ? fundingLabel(c.stream, now) : "Servicio mensual"} earned={c.period ? 0 : preview.progress} funded={c.deposited === undefined ? 1 : c.deposited / c.monthly} onClick={() => setDetail(c)} />)}</ul>
+              {list.length > 3 && <button type="button" onClick={() => navigate("contratos")} className={`-mt-3 mb-2 inline-flex items-center justify-center gap-2 py-2 text-xs font-medium ${dark ? "text-faint hover:text-white" : "text-muted hover:text-ink"}`}>Ver todos los contratos<Icon name="chevron" size={13} /></button>}
             </section>;
           })}
         </div>
@@ -169,10 +196,10 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
           <div className="hidden grid-cols-[repeat(4,minmax(0,1fr))_20px] gap-6 border-b border-line bg-page px-6 py-3 text-xs font-medium text-muted md:grid"><span>Empresa / servicio</span><span>Tipo</span><span>Importe</span><span>Estado</span><span /></div>
           {contracts.map(c => <button key={c.name + c.service} type="button" onClick={() => setDetail(c)}
             className="grid w-full grid-cols-[minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-line-soft px-4 py-5 text-left transition hover:bg-page last:border-0 md:grid-cols-[repeat(4,minmax(0,1fr))_20px] md:gap-6 md:px-6">
-            <span className="min-w-0"><span className="block truncate text-base font-semibold">{c.name}</span><span className="mt-1 block truncate text-xs text-muted">{c.service}</span><span className="mt-2 block text-xs text-muted md:hidden">{c.direction === "in" ? "Cobrás" : "Pagás"} · En curso</span></span>
+            <span className="min-w-0"><span className="block truncate text-base font-semibold">{c.name}</span><span className="mt-1 block truncate text-xs text-muted">{c.service}</span><span className="mt-2 block text-xs text-muted md:hidden">{c.direction === "in" ? "Cobrás" : "Pagás"} · {c.stream ? fundingLabel(c.stream, now) : "En curso"}</span></span>
             <span className="hidden justify-start md:flex"><span className={`inline-flex min-w-[78px] items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-semibold ${c.direction === "in" ? "border-ink bg-ink text-white" : "border-line bg-white text-ink-2"}`}>{c.direction === "in" ? "Cobrás" : "Pagás"}</span></span>
             <span className="text-right md:text-left"><span className="tnum block text-base font-semibold">{money(c.monthly)}</span><span className="text-xs text-muted">{c.period ? durationLabel(c.period) : "por mes"}</span></span>
-            <span className="hidden justify-start md:flex"><span className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-muted">En curso</span></span>
+            <span className="hidden justify-start md:flex"><span className="text-xs font-medium text-muted">{c.stream ? fundingLabel(c.stream, now) : "En curso"}</span></span>
             <Icon name="chevron" size={16} className="text-subtle" />
           </button>)}
         </div>
@@ -181,14 +208,30 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
           <ul className="mt-3">{moves.map(m => <Move key={m.id} move={m} nameOf={nameOf} outgoing={outgoing} />)}</ul>
         </details>
       </div>
+
       <div hidden={view !== "copiloto"}><PayerProvider><Copilot userId={roles.payer.id} /></PayerProvider></div>
-      {detail && <Drawer title="Contrato de servicio" onClose={() => setDetail(null)}>
-        <span className="text-xs font-medium text-celeste-ink">{detail.direction === "in" ? "Cobrás" : "Pagás"} · En curso</span>
-        <h3 className="text-2xl font-semibold">{detail.name}</h3><p className="-mt-4 text-sm text-muted">{detail.service}</p>
-        <div className="rounded-2xl bg-ink p-5 text-white"><p className="mb-2 text-xs text-faint">{detail.period ? "Monto del contrato" : "Importe mensual"}</p><p className="tnum text-4xl font-medium">{money(detail.monthly)}</p></div>
-        <dl className="space-y-4 text-sm"><div className="flex justify-between"><dt className="text-muted">Devengado</dt><dd className="tnum font-semibold">{money(detail.earned, 2)}</dd></div><div className="flex justify-between"><dt className="text-muted">Duración</dt><dd>{detail.period ? durationLabel(detail.period) : "Mensual"}</dd></div><div className="flex justify-between"><dt className="text-muted">Fondeo</dt><dd>{detail.deposited === undefined ? "100%" : money(detail.deposited, 2)}</dd></div></dl>
-        <button className={ACTION_STYLE} type="button" onClick={() => { setPanel(detail.direction === "in" ? "withdraw" : "new"); setDetail(null); }}>{detail.direction === "in" ? "Retirar" : "Nuevo contrato"}</button>
-      </Drawer>}
+      {panel === "funding" && !detail && <Modal title="Pagos por completar" onClose={() => setPanel(null)}>
+        <div className="divide-y divide-line-soft">{attention.map(c => {
+          const funding = fundingAmounts(c.stream!, now);
+          return <button key={c.stream!.id} type="button" onClick={() => setDetail(c)} className="grid w-full grid-cols-[minmax(0,1fr)_auto_16px] items-center gap-4 py-5 text-left hover:bg-page">
+            <span><span className="block font-semibold">{c.name}</span><span className="mt-1 block text-sm text-muted">{c.service} · {fundingLabel(c.stream!, now)}</span><span className="mt-1 block text-xs text-muted">Dinero para el trabajo hasta el {dateLabel(funding.coveredUntil)} · {clock(funding.coveredUntil)}</span></span>
+            <span className="text-right"><span className="tnum block font-semibold">{compactMoney(funding.remaining)}</span><span className="text-xs text-muted">falta depositar</span></span><Icon name="chevron" size={16} />
+          </button>;
+        })}</div>
+        {attention.length === 0 && <p className="py-6 text-sm text-muted">No hay pagos por completar.</p>}
+      </Modal>}
+      {detail && <Modal title={detail.name} subtitle={`${detail.service} · ${detail.direction === "in" ? "Cobrás" : "Pagás"} · ${detail.stream ? fundingLabel(detail.stream, now) : "En curso"}`}
+        onBack={panel === "funding" ? () => { if (!fundingBusy) setDetail(null); } : undefined}
+        onClose={() => { if (!fundingBusy) { setDetail(null); if (panel === "funding") setPanel(null); } }}>
+        <dl className="grid grid-cols-2 gap-3 rounded-xl bg-page p-4 sm:grid-cols-3">
+          <div><dt className="text-xs text-muted">{detail.period ? "Monto total" : "Importe mensual"}</dt><dd className="tnum mt-1 text-lg font-semibold">{compactMoney(detail.monthly)}</dd></div>
+          <div><dt className="text-xs text-muted">Ganado hasta ahora</dt><dd className="tnum mt-1 text-lg font-semibold">{compactMoney(detail.earned)}</dd></div>
+          <div><dt className="text-xs text-muted">Duración</dt><dd className="mt-1 text-lg font-semibold">{detail.period ? durationLabel(detail.period) : "Mensual"}</dd></div>
+        </dl>
+        {detail.direction === "in" && <ReputationCard key={detail.clientId ?? detail.name} clientId={detail.clientId} demoName={detail.stream ? undefined : detail.name} revision={detail.stream?.deposited ?? ""} />}
+        {detail.stream && detail.direction === "out" ? <FundingPanel key={detail.stream.id} stream={detail.stream} payerId={roles.payer.id} now={now} onBusy={setFundingBusy}
+          onUpdate={stream => { const updated = { ...detail, stream, deposited: Number(stream.deposited), earned: liveVested(stream, now) }; setDetail(updated); setCreated(x => [...x.filter(c => c.stream?.id !== stream.id), updated]); refresh(); }} /> : <button className={ACTION_STYLE} type="button" onClick={() => { setPanel(detail.direction === "in" ? "withdraw" : "new"); setDetail(null); }}>{detail.direction === "in" ? "Retirar" : "Nuevo contrato"}</button>}
+      </Modal>}
       {panel === "new" && <NewContract roles={roles} onClose={() => setPanel(null)}
         onCreated={c => { setCreated(x => [...x, c]); refresh(); }}
         onViewContract={c => { setPanel(null); setView("contratos"); setDetail(c); }} />}
@@ -271,6 +314,21 @@ function Move({ move, outgoing, nameOf }: { move: Activity; outgoing: StreamView
   );
 }
 
+function Modal({ title, subtitle, onBack, onClose, children }: { title: string; subtitle?: string; onBack?: () => void; onClose: () => void; children: React.ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => dialog?.close(); }, []);
+  return <dialog ref={ref} aria-label={title} onCancel={e => { e.preventDefault(); onClose(); }} onClick={e => { if (e.target === e.currentTarget) onClose(); }} className="fixed inset-0 m-auto max-h-[92dvh] w-[calc(100%_-_24px)] max-w-[680px] overflow-y-auto rounded-2xl bg-white p-0 text-ink shadow-xl backdrop:bg-ink/35">
+    <div className="flex flex-col gap-4 p-5 sm:p-6">
+      <div className="flex items-start gap-3">
+        {onBack && <button type="button" aria-label="Volver a la lista" title="Volver a la lista" onClick={onBack} className="-ml-1 flex size-9 shrink-0 items-center justify-center rounded-lg hover:bg-surface"><Icon name="back" size={18} /></button>}
+        <div className="min-w-0 flex-1"><h2 className="text-xl font-semibold leading-9 tracking-tight">{title}</h2>{subtitle && <p className="text-xs leading-relaxed text-muted">{subtitle}</p>}</div>
+        <button autoFocus type="button" aria-label="Cerrar" onClick={onClose} className="flex size-9 shrink-0 items-center justify-center rounded-lg hover:bg-surface"><Icon name="close" size={18} /></button>
+      </div>
+      {children}
+    </div>
+  </dialog>;
+}
+
 function Drawer({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -348,7 +406,7 @@ function NewContract({ roles, onClose, onCreated, onViewContract }: {
       const start = Math.floor(now);
       const { txHash, streamIds } = await api.create(roles.payer.id,
         [{ workerId: provider.id, totalAmount: terms.totalAmount, initialDeposit: terms.initialDeposit }], start, start + terms.seconds);
-      const contract: DisplayContract = { name: provider.name, service: `Contrato #${streamIds.join(", #")} · ${durationLabel(terms.seconds)}`, monthly: Number(terms.totalAmount), earned: 0, direction: "out", period: terms.seconds, deposited: Number(terms.initialDeposit) };
+      const contract: DisplayContract = { name: provider.name, service: `Contrato #${streamIds.join(", #")} · ${durationLabel(terms.seconds)}`, monthly: Number(terms.totalAmount), earned: 0, direction: "out", period: terms.seconds, deposited: Number(terms.initialDeposit), stream: { id: streamIds[0], payerId: roles.payer.id, workerId: provider.id, totalAmount: terms.totalAmount, deposited: terms.initialDeposit, withdrawn: "0", start, end: start + terms.seconds, canceledAt: null, status: "streaming" } };
       setResult({ ids: streamIds, hash: txHash, contract });
       onCreated(contract);
     } catch (e) { setError((e as Error).message); }

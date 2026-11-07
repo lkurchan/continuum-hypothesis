@@ -1,4 +1,5 @@
 import type { Activity, Amount, DemoUser, StreamView } from "@/lib/domain/types";
+import type { PaymentReputation } from "@/lib/domain/reputation";
 import { redirectToLogin } from "@/lib/auth/client";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -16,6 +17,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 const post = <T,>(path: string, body: unknown) => call<T>(path, { method: "POST", body: JSON.stringify(body) });
 
 export const api = {
+  reputation: (clientId: string) => call<PaymentReputation>(`/api/clients/${encodeURIComponent(clientId)}/reputation`),
   users: () => call<DemoUser[]>("/api/users"),
   streams: (userId: string) => call<StreamView[]>(`/api/streams?userId=${encodeURIComponent(userId)}`),
   activity: (userId: string) => call<Activity[]>(`/api/activity?userId=${encodeURIComponent(userId)}`),
