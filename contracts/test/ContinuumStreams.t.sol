@@ -5,6 +5,20 @@ import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ContinuumStreams} from "../src/ContinuumStreams.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract CallbackToken is MockERC20 {
+    bytes4 public callbackError;
+
+    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+        try ContinuumStreams(to).createStream(address(this), this, 1, 1, 2, 0) {
+            callbackError = bytes4(0);
+        } catch (bytes memory reason) {
+            callbackError = bytes4(reason);
+        }
+        return super.transferFrom(from, to, amount);
+    }
+}
 
 contract ContinuumStreamsTest is Test {
     ContinuumStreams streams;
@@ -252,6 +266,65 @@ contract ContinuumStreamsTest is Test {
     }
 
     // 7. Creation validations
+    function test_batch_rollsBackEarlierItemsIfLaterItemIsInvalid() public {
+        address[] memory recipients = new address[](2);
+        uint256[] memory totals = new uint256[](2);
+        uint256[] memory deposits = new uint256[](2);
+        recipients[0] = worker;
+        recipients[1] = address(0);
+        totals[0] = totals[1] = 100;
+        deposits[0] = deposits[1] = 50;
+        vm.prank(payer);
+        vm.expectRevert(ContinuumStreams.ZeroAddress.selector);
+        streams.createStreamsBatch(recipients, totals, deposits, token, START, END);
+        assertEq(streams.nextStreamId(), 1);
+        assertEq(token.balanceOf(address(streams)), 0);
+        vm.expectRevert(ContinuumStreams.StreamNotFound.selector);
+        streams.getStream(1);
+    }
+
+    function test_batch_rollsBackOnFailedTransfer() public {
+        address[] memory recipients = new address[](2);
+        uint256[] memory totals = new uint256[](2);
+        uint256[] memory deposits = new uint256[](2);
+        recipients[0] = recipients[1] = worker;
+        totals[0] = totals[1] = 100;
+        deposits[0] = deposits[1] = 50;
+        vm.prank(payer);
+        token.approve(address(streams), 0);
+        vm.prank(payer);
+        vm.expectRevert();
+        streams.createStreamsBatch(recipients, totals, deposits, token, START, END);
+        assertEq(streams.nextStreamId(), 1);
+        assertEq(token.balanceOf(address(streams)), 0);
+        vm.expectRevert(ContinuumStreams.StreamNotFound.selector);
+        streams.getStream(1);
+    }
+
+    function test_failedWithdrawalTransferPreservesAccounting() public {
+        uint256 id = _create(TOTAL);
+        vm.warp(END);
+        vm.mockCallRevert(address(token), abi.encodeCall(IERC20.transfer, (worker, 10)), "token failed");
+        vm.prank(worker);
+        vm.expectRevert(bytes("token failed"));
+        streams.withdrawTo(id, worker, 10);
+        assertEq(streams.getStream(id).withdrawn, 0);
+        assertEq(streams.withdrawableAmount(id), TOTAL);
+        assertEq(token.balanceOf(address(streams)), TOTAL);
+    }
+
+    function test_tokenCallbackCannotReenterCreation() public {
+        CallbackToken callbackToken = new CallbackToken();
+        callbackToken.mint(payer, 100);
+        vm.startPrank(payer);
+        callbackToken.approve(address(streams), 100);
+        streams.createStream(worker, callbackToken, 100, START, END, 100);
+        vm.stopPrank();
+        assertEq(callbackToken.callbackError(), ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
+        assertEq(streams.nextStreamId(), 2);
+        assertEq(callbackToken.balanceOf(address(streams)), 100);
+    }
+
     function test_create_reverts() public {
         vm.startPrank(payer);
         vm.expectRevert(ContinuumStreams.InvalidTimes.selector);
