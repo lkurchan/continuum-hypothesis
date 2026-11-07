@@ -29,15 +29,15 @@ Las cuatro tablas tienen RLS habilitado y no tienen políticas de acceso públic
 
 El seed inicial incluye `platform`, `worker1` y `worker2` con direcciones cero. En el proyecto actual ya coinciden con las wallets demo. Para configurar una instalación nueva, usar `backend:wallets` como explica [OPERATIONS.md](OPERATIONS.md); las claves privadas van solo en `DEMO_PK_PLATFORM`, `DEMO_PK_WORKER1` y `DEMO_PK_WORKER2`. La dirección de Belo queda pendiente de confirmación.
 
-## Vercel pendiente
+## Vercel
 
-No se creó ni desplegó un proyecto remoto durante esta tarea: no había una conexión autenticada de Vercel disponible.
+El proyecto `continuum-hypothesis` está desplegado en [continuum-hypothesis.vercel.app](https://continuum-hypothesis.vercel.app). Production usa el backend real con acceso protegido; Preview conserva el modo mock sin claves reales. Se verificaron usuarios, streams e historial de B6 desde el dominio publicado. Ver [VERCEL.md](VERCEL.md) para el deployment, commit y alcance exactos; la UI completa requiere integrar su PR.
 
 Importar `lkurchan/continuum-hypothesis` desde GitHub con estos ajustes:
 
 | Ajuste | Valor |
 |---|---|
-| Project name | `continuum` |
+| Project name | `continuum-hypothesis` |
 | Framework preset | Next.js |
 | Root Directory | `web` |
 | Node.js | `24.x` |

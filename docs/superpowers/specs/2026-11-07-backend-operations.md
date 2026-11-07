@@ -20,6 +20,10 @@ El usuario indicó que llegó ARGt y pidió avanzar con el trabajo pendiente. Co
 
 Registrar en un journal local cada mutación como pendiente antes de enviarla, y guardar hash/receipt/resultado al confirmarse. Si queda un envío ambiguo, detenerse para consultar la chain; nunca repetirlo automáticamente. Verificar eventos, montos, balances, metadata/historial para ambos participantes y aislamiento del otro trabajador. Conservar evidencia pública de los hashes en el README y un informe B6; no guardar claves ni URLs RPC privadas. Validar la configuración de Vercel y entregar instrucciones para el integrante del equipo que realizará el despliegue.
 
+## Despliegue Vercel autorizado
+
+Crear el proyecto del repositorio en la cuenta del usuario, inicialmente en mock; proteger todos los deployments antes de activar las wallets reales. El usuario autorizó cargar RPC, clave de servidor de Supabase y tres claves demo desde el entorno local a Production, activar `CHAIN_MODE=real` y redesplegar. Preview conserva mock sin claves reales. Usar Node 24 y duración máxima de 300 segundos. Comprobar el rechazo de consultas sin sesión y las siete lecturas autenticadas, contrastando metadata/montos/hashes con B6. No enviar pagos, integrar PRs ni modificar UI como parte de esta validación. Registrar el deployment y los pendientes de integración.
+
 ## Validación
 
 Tests de herramientas para configuración inválida, aislamiento de secretos, cadena/token incorrectos, usuarios y wallets incompatibles, dry-run sin escrituras, montos exactos, negativa a duplicados y journals pendientes, y verificación posterior del seed. Ejecutar lint/tipos/build, tests existentes, smoke HTTP y CI remoto. Mantener git limpio y publicar PR, sin merge a main.

@@ -1,11 +1,22 @@
 # Despliegue de la demo en Vercel
 
-Guía para el integrante del equipo que administra Supabase. Se reutilizan la base, el contrato y las wallets existentes; no crear otro proyecto Supabase ni volver a ejecutar migraciones sobre las tablas actuales.
+Proyecto desplegado en [continuum-hypothesis.vercel.app](https://continuum-hypothesis.vercel.app), con acceso mediante Vercel Authentication. Se reutilizan la base, el contrato y las wallets existentes; no crear otro proyecto Supabase ni volver a ejecutar migraciones sobre las tablas actuales.
+
+## Estado verificado el 7/11/2026, 12:41 ART
+
+- Proyecto `continuum-hypothesis`, equipo `lkurchans-projects`, conectado al repositorio GitHub.
+- [Deployment real](https://vercel.com/lkurchans-projects/continuum-hypothesis/2QgaGWNufE4av7h5dvdk2Vs6n2at) **Ready**, basado en `main`, commit `a943c5652c24422af2ec8d77aac886f9b1bf656c`.
+- Root Directory `web`, Next.js, Node **24.x**, instalación `npm ci`, build `npm run build`, Fluid habilitado y duración máxima **300 segundos**.
+- **Production: `CHAIN_MODE=real`**, RPC, contrato, token, Supabase y las tres wallets demo. **Preview: `CHAIN_MODE=mock`**, sin claves reales.
+- Vercel Authentication con **All Deployments**. Las consultas sin cookies a `/` y `/api/users` devolvieron HTTP 302 al acceso de Vercel, sin entregar datos.
+- Con la sesión autorizada, siete lecturas de API verificaron usuarios/wallets, metadata e historial: plataforma 2 streams/6 actividades; worker1 1/5; worker2 1/1. Los seis montos y los cinco hashes coinciden con B6, incluido el retiro del remanente. No se enviaron mutaciones ni pagos desde Vercel.
+
+La UI de #5 y las herramientas/docs de #6 todavía no estaban integradas en ese commit. El despliegue valida el backend real; la presentación completa requiere integrar los PR previstos y comprobar el deployment que resulte. La evidencia local quedó en `web/.operations/vercel-verification.json`, ignorada por Git.
 
 ## Importación
 
 1. En Vercel, **Add New → Project → Import Git Repository**, elegir `lkurchan/continuum-hypothesis`.
-2. Project name: `continuum` (o un nombre disponible), framework **Next.js**, Root Directory **`web`**.
+2. Project name: `continuum-hypothesis` (o un nombre disponible para otra instalación), framework **Next.js**, Root Directory **`web`**.
 3. Node.js **24.x**, Install Command **`npm ci`**, Build Command **`npm run build`**, Output Directory automático.
 4. Production Branch **`main`**. Integrar mediante PR los cambios de UI y backend que se quieran mostrar antes del despliegue final. El 7/11, las entregas pendientes son [PR #5](https://github.com/lkurchan/continuum-hypothesis/pull/5) y [PR #6](https://github.com/lkurchan/continuum-hypothesis/pull/6). Un Preview de #6 sirve para comprobar la API y no contiene la UI de #5.
 
@@ -21,7 +32,7 @@ Dar acceso al operador de la demo mediante su cuenta o un enlace compartido de V
 
 ## Variables
 
-Configurar **Production y Preview** solamente si ambos entornos están protegidos. Cargar los valores desde `web/.env.local` o el gestor seguro del equipo, nunca desde el chat, un commit o una captura de claves.
+Configurar las variables reales **solo en Production**. Mantener `CHAIN_MODE=mock` en Preview y no asignarle las claves reales. Cargar los valores desde `web/.env.local` o el gestor seguro del equipo, nunca desde el chat, un commit o una captura de claves.
 
 | Variable | Valor / origen |
 |---|---|
@@ -34,6 +45,8 @@ Configurar **Production y Preview** solamente si ambos entornos están protegido
 | `DEMO_PK_WORKER2` | Clave existente de worker2, exclusivamente servidor |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase existente |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave `service_role` o `sb_secret_...` del mismo proyecto, exclusivamente servidor |
+
+Guardar `NEXT_PUBLIC_SUPABASE_URL` como **Config**: Vercel rechaza variables con prefijo público marcadas como Secret. Guardar las claves y el RPC como **Secret**. Las nueve variables de la tabla están configuradas en Production; la URL pública es Config y las otras ocho son Secret. Si una importación falla parcialmente, revisar la lista antes de repetirla: algunas variables pueden haberse guardado.
 
 La clave pública `NEXT_PUBLIC_SUPABASE_ANON_KEY` no es necesaria para estas rutas. `DEPLOYER_PK` y `ARBISCAN_API_KEY` son para contratos, no para el deploy web. `ANTHROPIC_API_KEY` queda para la integración del agente. Ninguna clave privada ni la clave de servidor de Supabase lleva prefijo `NEXT_PUBLIC_`.
 

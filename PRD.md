@@ -197,17 +197,17 @@ Regla general: cada módulo toca **solo sus carpetas**. Las interfaces de la sec
 - [x] Escribir los tipos (8.1), la interfaz `StreamGateway` (8.2), los stubs de las rutas de la API (8.3) y `web/.env.example`.
 - [x] Preparar y validar la migración inicial de Supabase y el seed de los tres usuarios demo.
 - [x] Crear y validar Supabase: tablas, RPC, usuarios y wallets demo.
-- [ ] Crear el proyecto de Vercel, linkeado al repo.
+- [x] Crear el proyecto de Vercel, linkeado al repo.
 - [x] Hacer el primer commit en `main`. A partir de acá, todos branchean.
 
-La base local y Supabase remoto están validados; Vercel sigue pendiente. Ver `docs/SETUP.md` para comandos, configuración de servicios y arranque de branches.
+La base local, Supabase remoto y el backend real en Vercel están validados. El deployment actual parte de `main`; la UI completa sigue pendiente de integrar. Ver `docs/SETUP.md` y `docs/VERCEL.md` para configuración y evidencia.
 
 ### Tareas operativas (cualquiera, **apenas arranca el día**: son las bloqueantes reales)
 - [x] Conseguir ARGt en Arbitrum: fondeo de 3371,33 ARGt verificado en la plataforma antes de B6.
 - [x] Conseguir ETH en Arbitrum para gas y repartirlo entre las wallets demo (deployer, pagador y trabajadores).
 - [ ] Confirmar con Belo o los mentores que una dirección de Belo recibe ARGt en Arbitrum, y anotar esa dirección.
 - [ ] Conseguir una API key de Anthropic.
-- [ ] Generar las wallets demo y cargar las claves en Vercel.
+- [x] Generar las wallets demo y cargar las claves en Vercel, solo en Production con acceso protegido.
 
 ### Módulo A — Contrato (`contracts/`)
 - [x] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
@@ -224,7 +224,7 @@ La base local y Supabase remoto están validados; Vercel sigue pendiente. Ver `d
 - [x] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
 - [x] B6. Prueba de punta a punta en mainnet: lote, top-up, retiro, cancelación y remanente; hashes en README y `docs/B6.md`.
 
-B1–B6 están implementados y verificados. El contrato está desplegado y se contrastó su bytecode. B6 ejecutó el flujo real por API con Supabase: depositó 2,2 ARGt, retiró 0,3 ARGt a worker1 y devolvió 0,9 ARGt al pagador; quedó 1 ARGt en el stream 2. Receipts, balances e historial por participante comprobados. Ver `docs/B6.md`, `docs/OPERATIONS.md`, `docs/BACKEND.md` y `docs/CI.md`. Vercel y el destino Belo siguen pendientes.
+B1–B6 están implementados y verificados. El contrato está desplegado y se contrastó su bytecode. B6 ejecutó el flujo real por API con Supabase: depositó 2,2 ARGt, retiró 0,3 ARGt a worker1 y devolvió 0,9 ARGt al pagador; quedó 1 ARGt en el stream 2. Receipts, balances e historial por participante comprobados. El backend real también pasó las lecturas desde Vercel protegido, sin nuevos pagos. Ver `docs/B6.md`, `docs/VERCEL.md`, `docs/OPERATIONS.md`, `docs/BACKEND.md` y `docs/CI.md`. El destino Belo sigue pendiente.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
 - [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
@@ -244,7 +244,7 @@ B1–B6 están implementados y verificados. El contrato está desplegado y se co
 - [x] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.
 - [x] Script de seed de streams demo y modo mock con datos lindos. Seed real por API ejecutado en B6; preparar un horario nuevo para el próximo ensayo.
 - [x] Review de los PRs de A y B (seguridad del contrato y manejo de claves).
-- [ ] Configuración de Vercel y verificación del deploy.
+- [x] Configuración de Vercel y verificación del backend real desplegado. Revalidar la presentación al integrar la UI.
 
 ## 10. Cronograma
 

@@ -4,7 +4,7 @@ Pagos por segundo para freelancers y trabajadores de plataformas, en pesos oncha
 
 Ver [PRD.md](PRD.md) para alcance, arquitectura e interfaces, y [docs/SETUP.md](docs/SETUP.md) para instalar la base y preparar Supabase y Vercel.
 
-Contrato desplegado en Arbitrum One y backend verificado con ARGt real: creación en lote, top-up, retiro, cancelación con reembolso y retiro del remanente. Supabase conserva metadata e historial y los balances onchain cierran. Ver [evidencia B6](docs/B6.md). El deploy web sigue pendiente; la [guía de Vercel](docs/VERCEL.md) incluye configuración y protección de acceso. ARGt es un medio de pago, **sin rendimiento**.
+Contrato desplegado en Arbitrum One y backend verificado con ARGt real: creación en lote, top-up, retiro, cancelación con reembolso y retiro del remanente. Supabase conserva metadata e historial y los balances onchain cierran. Ver [evidencia B6](docs/B6.md). El backend está publicado en [continuum-hypothesis.vercel.app](https://continuum-hypothesis.vercel.app), con acceso protegido y lecturas reales verificadas; la UI completa sigue pendiente de integrar. La [guía de Vercel](docs/VERCEL.md) registra configuración y deployment. ARGt es un medio de pago, **sin rendimiento**.
 
 ## Chain, token y contrato
 
