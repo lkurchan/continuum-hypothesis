@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Continuum design tokens (Claude Design, v0.1). One ink, one accent:
+   celeste is only for what flows (the "now" dot, funded share, incomes). */
+@theme {
+  --color-ink: #0b0b0c;
+  --color-ink-2: #3a3a40;
+  --color-muted: #5f5f67;
+  --color-subtle: #6b6b73;
+  --color-faint: #a3a3aa;
+  --color-line: #e7e7ea;
+  --color-line-soft: #f0f0f2;
+  --color-track: #ededef;
+  --color-surface: #f4f4f5;
+  --color-page: #f6f6f7;
+  --color-celeste: #3b8fd9;
+  --color-celeste-ink: #0f5fa6;
+  --color-celeste-soft: #eaf3fc;
+  --color-celeste-dark: #6cb4ee;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecec;
+  --color-danger-line: #f3c9c5;
+  --color-mock: #7a4b00;
+  --color-mock-soft: #fff6e5;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: monospace;
-}
+  --font-sans: var(--font-geist), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --animate-pulse-dot: pulse-dot 1.8s ease-out infinite;
+  --animate-flow: flow 16s linear infinite;
+  --animate-rise: rise 0.35s ease-out both;
+
+  @keyframes pulse-dot {
+    0% { box-shadow: 0 0 0 0 rgb(59 143 217 / 0.5); }
+    70% { box-shadow: 0 0 0 9px rgb(59 143 217 / 0); }
+    100% { box-shadow: 0 0 0 0 rgb(59 143 217 / 0); }
+  }
+  @keyframes flow {
+    0% { width: 8%; }
+    100% { width: 92%; }
+  }
+  @keyframes rise {
+    0% { opacity: 0; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
 }
 
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+html {
+  background: #ffffff;
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-dot,
+  .animate-flow,
+  .animate-rise {
+    animation: none;
+  }
 }
