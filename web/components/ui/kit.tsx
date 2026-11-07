@@ -15,7 +15,7 @@ export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?:
   );
 }
 
-const buttonBase = "inline-flex items-center justify-center gap-2 font-semibold tracking-[-0.01em] transition-transform active:scale-[.98] disabled:active:scale-100";
+const buttonBase = "inline-flex items-center justify-center gap-2 font-semibold tracking-[-0.01em] transition-transform duration-500 ease-spring active:scale-[.97] active:duration-100 disabled:active:scale-100";
 export const buttonStyles = {
   primary: `${buttonBase} h-14 rounded-2xl bg-ink px-7 text-base text-white disabled:bg-track disabled:text-subtle`,
   secondary: `${buttonBase} h-14 rounded-2xl border border-line bg-white px-6 text-base text-ink`,
@@ -74,11 +74,11 @@ export function StreamLine({ earned, funded, live = true }: { earned: number; fu
   return (
     <div aria-hidden="true" className="relative h-3.5">
       <div className="absolute inset-x-0 top-1.5 h-0.5 rounded bg-track" />
-      <div className="absolute left-0 top-1 h-1.5 rounded bg-celeste/20" style={{ width: pct(funded) }} />
-      <div className="absolute left-0 top-1.5 h-0.5 rounded bg-ink" style={{ width: pct(earned) }} />
+      <div className="absolute left-0 top-1 h-1.5 rounded bg-celeste/20 transition-[width] duration-700 ease-spring" style={{ width: pct(funded) }} />
+      <div className="absolute left-0 top-1.5 h-0.5 rounded bg-ink transition-[width] duration-150 ease-linear" style={{ width: pct(earned) }} />
       {live && (
         <span
-          className="absolute top-0.5 -ml-[7px] box-content size-2.5 rounded-full border-2 border-white bg-celeste animate-pulse-dot"
+          className="absolute top-0.5 -ml-[7px] box-content size-2.5 rounded-full border-2 border-white bg-celeste animate-pulse-dot transition-[left] duration-150 ease-linear"
           style={{ left: pct(earned) }}
         />
       )}
@@ -144,20 +144,6 @@ export function Icon({ name, size = 18, className = "", strokeWidth = 2 }: { nam
   );
 }
 
-export function Segmented<T extends string | number>({ options, value, onChange, label }: {
-  options: { value: T; label: ReactNode }[]; value: T; onChange: (v: T) => void; label: string;
-}) {
-  return (
-    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <button key={String(o.value)} type="button" aria-pressed={on} onClick={() => onChange(o.value)}
-            className={`h-9 rounded-full border px-3.5 text-[13px] font-medium transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-page"}`}>
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <div aria-hidden="true" className={`skeleton ${className}`} />;
 }
