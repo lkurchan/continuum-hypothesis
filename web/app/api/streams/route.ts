@@ -1,13 +1,14 @@
+import { withDemoAuth } from "@/lib/auth/guard";
 import { normalizeAmount } from "@/lib/domain/amounts";
 import { requireCondition } from "@/lib/domain/errors";
 import { body, object, respond, textField, userId } from "@/lib/domain/http";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   return respond(({ service }) => service.streams(userId(request)));
 }
 
 // Body and response follow PRD 8.3; payerId also supplies the demo identity.
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   return respond(async ({ service }) => {
     const payload = await body(request);
     const payerId = textField(payload.payerId, "payerId");
@@ -20,3 +21,6 @@ export async function POST(request: Request) {
     return service.create({ payerId, items, start: payload.start, end: payload.end }, userId(request, payload, payerId));
   }, 201);
 }
+
+export const GET = withDemoAuth(handleGET);
+export const POST = withDemoAuth(handlePOST);
