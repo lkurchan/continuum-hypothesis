@@ -43,7 +43,7 @@ export function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
 }
 
-const time = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" });
+const time = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 const day = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short" });
 
 export function when(iso: string): string {
