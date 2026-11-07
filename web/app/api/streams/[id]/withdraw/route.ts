@@ -1,8 +1,9 @@
+import { withDemoAuth } from "@/lib/auth/guard";
 import { body, respond, streamId, userId } from "@/lib/domain/http";
 import { positiveAmount } from "@/lib/domain/amounts";
 import { requireCondition } from "@/lib/domain/errors";
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: Request, context: { params: Promise<{ id: string }> }) {
   return respond(async ({ service }) => {
     const id = streamId((await context.params).id);
     const payload = await body(request);
@@ -10,3 +11,5 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return service.withdraw(id, userId(request, payload), positiveAmount(payload.amount), payload.destination);
   });
 }
+
+export const POST = withDemoAuth(handlePOST);

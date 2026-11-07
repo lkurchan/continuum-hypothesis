@@ -1,3 +1,4 @@
+import { withDemoAuth } from "@/lib/auth/guard";
 import Anthropic from "@anthropic-ai/sdk";
 import { workerSnapshot } from "@/lib/agent/context";
 import { COPILOT_MODEL, COPILOT_SYSTEM } from "@/lib/agent/prompt";
@@ -23,7 +24,7 @@ function parseMessages(value: unknown): ChatMessage[] {
 const errorResponse = (message: string, status: number) =>
   Response.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let snapshot: string;
   let messages: ChatMessage[];
   try {
@@ -71,3 +72,5 @@ export async function POST(request: Request) {
 
   return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
 }
+
+export const POST = withDemoAuth(handlePOST);

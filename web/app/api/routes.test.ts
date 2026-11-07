@@ -20,7 +20,7 @@ beforeEach(() => { backend = createDemoBackend(() => 1000); });
 
 describe("HTTP contract", () => {
   it("serves public demo users and isolates streams and activity", async () => {
-    const result = await users();
+    const result = await users(get("users"));
     expect(result.status).toBe(200);
     expect(result.headers.get("X-Chain-Mode")).toBe("mock");
     expect(result.headers.get("Cache-Control")).toBe("no-store");
@@ -78,7 +78,7 @@ describe("HTTP contract", () => {
   });
   it("never leaks unexpected provider errors", async () => {
     vi.spyOn(backend.service, "users").mockRejectedValue(new Error("secret rpc key"));
-    const response = await users();
+    const response = await users(get("users"));
     expect(response.status).toBe(500);
     expect(JSON.stringify(await response.json())).not.toContain("secret");
   });

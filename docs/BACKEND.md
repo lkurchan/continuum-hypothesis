@@ -34,7 +34,7 @@ Se mantienen los tipos e interfaces de PRD 8. Las rutas implementadas son:
 | POST `/api/streams/[id]/cancel?userId=...` | Sin body | 200, `{ txHash, refunded, kept }` |
 | GET `/api/activity?userId=...` | Identidad demo | 200, `Activity[]` |
 
-En mutaciones, `userId` puede viajar en body o query. Para crear, `payerId` sirve como identidad si no se proporciona `userId`; si se proporcionan ambos deben coincidir. Nunca se infiere la identidad del dueño del stream para autorizar un retiro o cancelación. Este selector sigue siendo una demo sin autenticación real.
+En mutaciones, `userId` puede viajar en body o query. Para crear, `payerId` sirve como identidad si no se proporciona `userId`; si se proporcionan ambos deben coincidir. Nunca se infiere la identidad del dueño del stream para autorizar un retiro o cancelación. En modo real, primero se exige la sesión de operador del [login demo](DEMO-LOGIN.md). El selector permite usar los tres usuarios demo después de ese acceso; no es autenticación individual de trabajadores.
 
 Los errores devuelven `{ error: string }`, con 400 para entrada inválida, 403 para permisos, 404 para recursos inexistentes, 409 para saldo/estado incompatible, 413 para cuerpos demasiado grandes y 503 para configuración/proveedores no disponibles. Los errores inesperados devuelven 500 sin detalles internos.
 
@@ -58,7 +58,7 @@ El gateway valida Arbitrum One y ARGt, aprueba el monto necesario, simula, firma
 
 La creación guarda metadata y actividad en una sola función SQL transaccional. La actividad numeric se consulta como texto antes de serializar JSON, usando el [casting de columnas de PostgREST](https://docs.postgrest.org/en/stable/references/api/tables_views.html#casting-columns).
 
-Una confirmación onchain y una escritura en Postgres no son una transacción única. Si la chain confirma pero falla la base, el error incluye el hash e indica reconciliarlo. Si la confirmación queda pendiente o el envío resulta ambiguo, consultar primero el explorer/wallet. **No reintentar automáticamente las mutaciones.** La autenticación real, la idempotencia distribuida y la reconciliación automática requieren una etapa posterior.
+Una confirmación onchain y una escritura en Postgres no son una transacción única. Si la chain confirma pero falla la base, el error incluye el hash e indica reconciliarlo. Si la confirmación queda pendiente o el envío resulta ambiguo, consultar primero el explorer/wallet. **No reintentar automáticamente las mutaciones.** Las cuentas individuales con permisos por persona, la idempotencia distribuida y la reconciliación automática requieren una etapa posterior.
 
 ## Verificación y pendientes
 

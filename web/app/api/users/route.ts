@@ -1,5 +1,8 @@
+import { withDemoAuth } from "@/lib/auth/guard";
 import { respond } from "@/lib/domain/http";
 
-export async function GET() {
+async function handleGET() {
   return respond(({ service }) => service.users());
 }
+
+export const GET = withDemoAuth(handleGET);
