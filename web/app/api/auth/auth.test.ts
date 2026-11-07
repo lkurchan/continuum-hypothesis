@@ -25,6 +25,7 @@ const post = (value: unknown, origin = "https://demo.example") => new Request("h
 beforeEach(() => {
   backend.mockClear();
   vi.stubEnv("CHAIN_MODE", "real");
+  vi.stubEnv("DEMO_ACCESS", "private");
   vi.stubEnv("DEMO_AUTH_PASSWORD_HASH", `${salt.toString("hex")}:${scryptSync(password, salt, 64).toString("hex")}`);
   vi.stubEnv("DEMO_AUTH_SECRET", "cd".repeat(32));
 });
@@ -62,4 +63,12 @@ it("rejects invalid login input and cross-site attempts without issuing a cookie
   expect((await logout(post({}, "https://evil.example"))).status).toBe(403);
   vi.stubEnv("DEMO_AUTH_SECRET", "");
   expect((await login(post({ password }))).status).toBe(503);
+});
+
+it("reports public demo access without requiring or issuing a session", async () => {
+  vi.stubEnv("DEMO_ACCESS", "public");
+  const result = await session(new Request("https://demo.example/api/auth/session"));
+  expect(await result.json()).toEqual({ required: false, authenticated: true });
+  expect(result.headers.has("set-cookie")).toBe(false);
+  expect(backend).not.toHaveBeenCalled();
 });

@@ -24,3 +24,13 @@ Tests de sesión válida, inválida, expirada, firma/rol incorrectos, cookie seg
 `/login` es pública y solicita la clave del equipo mediante un campo password. Lee el estado de sesión y muestra errores de configuración, clave incorrecta y límite de intentos. Envía JSON al endpoint existente, sin persistir la clave ni la sesión en almacenamiento del navegador. Tras el login navega completamente al destino interno validado por el servidor.
 
 Con sesión vigente ofrece continuar y cerrar sesión. Logout elimina la cookie y navega a `/login`, descartando estado de la página. Las APIs de datos y el chat redirigen al login cuando reciben 401; no reintentan pagos ni mensajes. El resto de las pantallas conserva su diseño.
+
+## Acceso público solicitado por el usuario
+
+La instrucción posterior del usuario elimina la clave inicial y permite entrar a toda la demo con las operaciones actuales. Este modo se activa explícitamente con `DEMO_ACCESS=public` en producción y local. Reemplaza el requisito de sesión en ese entorno; no requiere ni genera cookies de operador. Las claves de wallets siguen exclusivamente en el servidor.
+
+- El resto de los entornos conserva el acceso privado por defecto y falla cerrado si falta su configuración.
+- En modo público, Proxy y cada handler permiten lecturas sin sesión, pero las mutaciones siguen exigiendo Origin del mismo sitio. No se alteran límites de saldo, propiedad de streams ni validación de destinos. El modo público permite a cualquier visitante operar las identidades demo.
+- `/api/auth/session` indica que no se requiere login; `/login` redirige al destino interno validado o a `/demo`.
+- Mantener las variables de autenticación para poder volver a modo privado. No cambiar la protección de previews de Vercel.
+- Publicar y verificar rutas y lecturas sin cookies. Las verificaciones no deben enviar transacciones reales.

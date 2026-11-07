@@ -84,3 +84,7 @@ npm run test:chain --prefix web
 El runner elige un puerto loopback libre, inicia Anvil, pasa los artefactos de este checkout, ejecuta la prueba y cierra el nodo. Falla si faltan herramientas/artefactos o no puede iniciar el nodo. La prueba aislada restaura su snapshot y se omite en `npm test` si falta `LOCAL_CHAIN_RPC_URL`; el job dedicado de CI siempre la ejecuta con `test:chain`. Ver [CI.md](CI.md).
 
 El contrato está desplegado y su bytecode fue contrastado con el repositorio. **B6 completado:** lote, top-up, retiro, cancelación y retiro remanente con ARGt real, metadata/actividad en Supabase y balances verificados. Las lecturas HTTP reales pasan para las tres identidades, tanto localmente como en el dominio de Vercel protegido. Ver [hashes y resultados](B6.md), [operación del backend](OPERATIONS.md) y [deployment y validación de Vercel](VERCEL.md). Belo necesita una dirección compatible confirmada. La UI y el agente siguen en sus módulos correspondientes.
+
+### Acceso sin clave
+
+`DEMO_ACCESS=public` permite entrar y operar los usuarios demo sin sesión, también en modo real. Las mutaciones siguen rechazando solicitudes sin Origin del mismo sitio. La opción es exclusiva del servidor; el valor por defecto es privado. Para volver a exigir clave, usar `DEMO_ACCESS=private` y conservar `DEMO_AUTH_PASSWORD_HASH` y `DEMO_AUTH_SECRET`. Production usa acceso público por pedido del usuario; no aplicar esta opción a previews automáticamente.

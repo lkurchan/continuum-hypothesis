@@ -8,7 +8,10 @@ export const SESSION_SECONDS = 8 * 60 * 60;
 const derive = promisify(scrypt);
 export type AuthConfig = { passwordHash: string; secret: Uint8Array; version: string };
 
+export const publicDemoEnabled = (env: Record<string, string | undefined> = process.env) => env.DEMO_ACCESS === "public";
+
 export function authConfig(env: Record<string, string | undefined> = process.env): AuthConfig | null {
+  if (publicDemoEnabled(env)) return null;
   const passwordHash = env.DEMO_AUTH_PASSWORD_HASH ?? "";
   const secret = env.DEMO_AUTH_SECRET ?? "";
   if ((env.CHAIN_MODE ?? "mock") === "mock" && !passwordHash && !secret) return null;
