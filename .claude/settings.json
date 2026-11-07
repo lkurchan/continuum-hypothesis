@@ -1,0 +1,15 @@
+{
+  "enabledPlugins": {
+    "jmo-workflow@jmo-skills": true,
+    "jmo-supabase@jmo-skills": true,
+    "jmo-neon@jmo-skills": true
+  },
+  "extraKnownMarketplaces": {
+    "jmo-skills": {
+      "source": {
+        "source": "github",
+        "repo": "23jmo/jmo-skills"
+      }
+    }
+  }
+}
