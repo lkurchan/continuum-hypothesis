@@ -79,7 +79,7 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 
 La vista `/demo` muestra siempre cifras ilustrativas grandes para el pitch, también en el resumen de retiro y los detalles de contratos, sin selector de modos. El menú superior reúne Inicio, Copiloto y Contratos; el ícono de persona permite cambiar de cuenta. El retiro propone 0,10 ARGt y limita el monto enviado a los fondos reales; los comprobantes y el historial onchain conservan los importes efectivamente transferidos. Nuevo contrato admite duración libre y fondeo inicial parcial, por porcentaje o importe; ninguna cifra ilustrativa de saldo se usa para autorizar una transacción.
 
-Todos los usuarios de `/entrar` abren esa misma cuenta Nodo Software SRL con “Cobrás” y “Pagás” juntas. Las entradas `/worker` y `/payer` redirigen a `/demo`; las identidades técnicas solo determinan las operaciones autorizadas y la cuenta elegida para retirar.
+`/entrar` ofrece únicamente Plataforma demo, que abre esa misma cuenta Acosta Servicios SRL con “Cobrás” y “Pagás” juntas. Las entradas `/worker` y `/payer` redirigen a `/demo`; las identidades técnicas solo determinan las operaciones autorizadas y la cuenta elegida para retirar.
 
 Hoy funciona standalone, pero lo construimos como si un host (Belo) fuera a abrirlo en un webview:
 - `app/(worker)/` tiene **su propio layout** y no depende de navegación, header ni estado global de la app ni de `/payer`.
