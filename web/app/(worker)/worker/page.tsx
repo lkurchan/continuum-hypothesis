@@ -68,6 +68,8 @@ function StreamSummary({ stream, streams, now }: { stream: StreamView; streams: 
   const status = liveStatus(stream, now);
   const rate = totalRate(streams, now);
   const parts = liveParts(available);
+  // The extra digits only move when the rate has sub-cent precision; otherwise they sit at "00".
+  const subCent = rate > 0 && Math.abs(rate * 100 - Math.round(rate * 100)) > 1e-6;
   const capped = status === "streaming" && vested >= deposited;
   const span = stream.end - stream.start;
   const elapsed = Math.min(Math.max((stream.canceledAt ?? now) - stream.start, 0), span);
@@ -82,17 +84,16 @@ function StreamSummary({ stream, streams, now }: { stream: StreamView; streams: 
           <span className="rounded-md border border-line px-[7px] py-[3px] text-[11px] font-semibold tracking-[0.04em] text-ink-2">ARGt</span>
         </div>
         <div className="tnum flex items-baseline whitespace-nowrap tracking-[-0.045em]" aria-live="off">
-          <span className="mr-1.5 text-[30px] text-faint">$</span>
+          <span className="mr-1.5 text-[30px] text-subtle">$</span>
           <span className="text-[clamp(44px,15vw,58px)] font-medium leading-none">{parts.int}</span>
           <span className="text-[30px] font-medium">,{parts.cents}</span>
-          {rate > 0 && <span className="ml-0.5 text-base font-medium tracking-normal text-faint">{parts.micro}</span>}
+          {subCent && <span className="ml-0.5 text-base font-medium tracking-normal text-subtle">{parts.micro}</span>}
         </div>
         {rate > 0 && (
           <div className="flex items-center gap-1.5 text-sm text-ink-2">
-            <Icon name="out" size={16} className="text-celeste" strokeWidth={2.2} />
-            <span className="tnum">+ {money(rate, rate < 1 ? 4 : 2)} por segundo</span>
-            <span className="text-faint">·</span>
-            <span className="tnum text-muted">{money(rate * 3600)} por hora</span>
+            <span className="tnum">{money(rate, rate < 1 ? 4 : 2)} por segundo trabajado</span>
+            <span className="text-subtle">·</span>
+            <span className="tnum whitespace-nowrap text-muted">{money(rate * 3600)}/h</span>
           </div>
         )}
       </Enter>
