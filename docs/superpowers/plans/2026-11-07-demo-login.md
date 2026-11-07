@@ -20,3 +20,10 @@
 2. [x] Recuperar 401 en llamadas de datos y chat con navegación completa, sin reintentos automáticos.
 3. [x] Verificar lint, tipos, build, smoke HTTP y navegación de login/logout en mock protegido. Chrome: clave incorrecta rechazada, clave correcta vuelve al asistente, logout vuelve a exigir acceso.
 4. [ ] Integrar por PR, verificar login y chat reales en Vercel sin enviar pagos.
+
+## Apertura de la demo sin clave
+
+1. Agregar una opción de servidor `DEMO_ACCESS=public`, con privado como comportamiento por defecto.
+2. Probar acceso sin cookie, rechazo de mutaciones de otro origen y mantenimiento del modo privado.
+3. Omitir el formulario de login cuando el modo público esté activo; actualizar documentación de entorno.
+4. Activar la opción en local y Production, integrar mediante PR y verificar el sitio y las lecturas sin sesión. No transferir fondos durante la validación.

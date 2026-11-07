@@ -15,6 +15,7 @@ const request = (token?: string, method = "GET", origin?: string) => new Request
 });
 beforeEach(() => {
   vi.stubEnv("CHAIN_MODE", "real");
+  vi.stubEnv("DEMO_ACCESS", "private");
   vi.stubEnv("DEMO_AUTH_PASSWORD_HASH", hash);
   vi.stubEnv("DEMO_AUTH_SECRET", "ab".repeat(32));
 });
@@ -79,5 +80,25 @@ describe("demo sessions", () => {
     for (let i = 0; i < 10; i++) expect(allowAttempt(id, 1000)).toBe(true);
     expect(allowAttempt(id, 1001)).toBe(false);
     expect(allowAttempt(id, 301000)).toBe(true);
+  });
+});
+
+describe("explicit public demo access", () => {
+  it("requires an explicit server flag; other values keep private mode", () => {
+    expect(authConfig({ CHAIN_MODE: "real", DEMO_ACCESS: "public" })).toBeNull();
+    expect(() => authConfig({ CHAIN_MODE: "real", DEMO_ACCESS: "true" })).toThrow();
+    expect(() => authConfig({ CHAIN_MODE: "real", DEMO_ACCESS: "private" })).toThrow();
+  });
+  it("allows anonymous reads and same-origin operations, still blocking cross-site requests", async () => {
+    vi.stubEnv("DEMO_ACCESS", "public");
+    const handler = vi.fn(async () => Response.json({ ok: true }));
+    expect((await withDemoAuth(handler)(request())).status).toBe(200);
+    expect((await withDemoAuth(handler)(request(undefined, "POST", "https://demo.example"))).status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(2);
+    for (const origin of [undefined, "https://evil.example"]) {
+      expect((await withDemoAuth(handler)(request(undefined, "POST", origin))).status).toBe(403);
+    }
+    expect((await withDemoAuth(handler)(new Request("https://demo.example/api/streams", { method: "POST", headers: { origin: "https://demo.example", "sec-fetch-site": "cross-site" } }))).status).toBe(403);
+    expect(handler).toHaveBeenCalledTimes(2);
   });
 });

@@ -304,3 +304,7 @@ Por pedido del usuario, Estudio Norte, Órbita Digital y Mercado Sur incluyen re
 ### Destino Belo temporal de la demo
 
 Los retiros Belo de `worker1` y `worker2` usan temporalmente la dirección indicada por el usuario: `0x5d474d0744284a72afbc4032fd001de50ea72b7c`. El servicio aplica el mismo destino a la información de la UI y a la operación, sin modificar las wallets custodiales ni Supabase. La acreditación en Belo debe comprobarse con una operación autorizada por el usuario.
+
+### Acceso público a la demo
+
+Por instrucción del usuario, Production permite acceder sin la clave inicial usando `DEMO_ACCESS=public`. Todos los visitantes pueden usar las identidades demo y sus operaciones actuales. Se conservan validación de origen para mutaciones, permisos de cada stream, saldo disponible y destinos; los secretos de custodia permanecen en el servidor. El modo privado sigue disponible al retirar esa opción.
