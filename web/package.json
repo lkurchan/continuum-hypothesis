@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:chain": "node scripts/test-chain.mjs",
     "test:api": "node scripts/smoke-backend.mjs",
+    "test:auth": "node scripts/smoke-auth.mjs",
     "backend:check": "node scripts/check-backend.mjs",
     "backend:verify-api": "node scripts/verify-api.mjs",
     "backend:wallets": "node scripts/sync-wallets.mjs",
@@ -20,6 +21,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
     "decimal.js": "^10.6.0",
+    "jose": "^6.2.15",
     "next": "16.4.5",
     "openai": "^7.53.0",
     "react": "19.3.0",

@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { payerSnapshot, workerSnapshot } from "@/lib/agent/context";
 import { COPILOT_SYSTEM, PAYER_SYSTEM, PROPOSAL_TOOL } from "@/lib/agent/prompt";
 import { PROPOSAL_SEPARATOR, toProposal } from "@/lib/agent/proposal";
+import { withDemoAuth } from "@/lib/auth/guard";
 import { getBackend } from "@/lib/db/runtime";
 import { DomainError, requireCondition } from "@/lib/domain/errors";
 import { body, userId } from "@/lib/domain/http";
@@ -25,7 +26,7 @@ function parseMessages(value: unknown): ChatMessage[] {
 const errorResponse = (message: string, status: number) =>
   Response.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let snapshot: string;
   let messages: ChatMessage[];
   let users: DemoUser[];
@@ -90,3 +91,5 @@ export async function POST(request: Request) {
 
   return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
 }
+
+export const POST = withDemoAuth(handlePOST);

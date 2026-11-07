@@ -69,7 +69,7 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 | PWA | Solo `app/manifest.ts`, íconos y color de tema, con `display: standalone` y `start_url: /worker`. **Sin service worker ni modo offline** (el caché puede mostrar una versión vieja en la demo) **y sin push** (eso va en el roadmap) |
 | Backend | Route handlers de Next.js que firman con **viem** |
 | Wallets | **Custodiales**: usuarios demo fijos, con una clave privada por usuario en variables de entorno. Cada wallet necesita algo de ETH en Arbitrum para gas |
-| Auth | Selector de usuario demo ("Entrar como…"), sin signup |
+| Auth | Acceso de operador con clave compartida del equipo y cookie firmada de 8 horas; luego selector de usuario demo ("Entrar como…"), sin signup. Backend en `docs/DEMO-LOGIN.md`; Gio implementa la pantalla |
 | Base | **Supabase** (Postgres): usuarios, metadata de streams, actividad y reglas del agente |
 | IA | OpenAI vía el **SDK oficial** (`openai`, Chat Completions con streaming). El servidor le pasa los saldos ya calculados. Al proveedor le explica su estado; al cliente le dice hasta cuándo está cubierto y le **propone** acuerdos con el tool `proponer_acuerdo`, que el usuario confirma en una tarjeta. Hace falta `OPENAI_API_KEY` y `OPENAI_MODEL` |
 | Deploy | Vercel |
@@ -175,7 +175,13 @@ Tiene dos implementaciones: `ViemStreamGateway` (Arbitrum real) y `MockStreamGat
 | GET | `/api/activity?userId=` | — | `Activity[]` |
 | POST | `/api/agent/chat` | mensajes del AI SDK | stream del AI SDK (prioridad baja) |
 
-Los errores devuelven `{ error: string }` con status 4xx/5xx. El usuario "logueado" viaja como `userId` en el body o en la query: es una demo y no hay sesión real.
+Los errores devuelven `{ error: string }` con status 4xx/5xx. En modo real, todas las rutas de datos y pagos requieren una sesión de operador; cada handler la verifica además de Proxy. La sesión permite elegir los usuarios demo mediante `userId` en body/query; no representa una cuenta individual de trabajador. Login/logout y contrato para la UI en `docs/DEMO-LOGIN.md`.
+
+| Método | Ruta de acceso | Entrada / respuesta |
+|---|---|---|
+| POST | `/api/auth/login` | `{ password, next? }` → `{ next }` y cookie HttpOnly |
+| GET | `/api/auth/session` | `{ required, authenticated }` |
+| POST | `/api/auth/logout` | Borra cookie → `{ loggedOut: true }` |
 
 ### 8.4 Base de datos (`supabase/migrations/`)
 
@@ -186,7 +192,7 @@ Los errores devuelven `{ error: string }` con status 4xx/5xx. El usuario "loguea
 
 ### 8.5 Variables de entorno (`web/.env.example`)
 
-`CHAIN_MODE`, `ARBITRUM_RPC_URL`, `STREAMS_CONTRACT_ADDRESS`, `ARGT_ADDRESS`, `DEMO_PK_<ID>` (una por usuario demo), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `ARBISCAN_API_KEY` (para verificar el contrato).
+`CHAIN_MODE`, `DEMO_AUTH_PASSWORD_HASH`, `DEMO_AUTH_SECRET`, `ARBITRUM_RPC_URL`, `STREAMS_CONTRACT_ADDRESS`, `ARGT_ADDRESS`, `DEMO_PK_<ID>` (una por usuario demo), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `ARBISCAN_API_KEY` (para verificar el contrato).
 
 ## 9. Equipo y tareas
 
