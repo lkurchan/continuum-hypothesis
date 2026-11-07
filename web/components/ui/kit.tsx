@@ -92,7 +92,7 @@ export function Hash({ hash }: { hash: string }) {
   if (!url) return <span className="font-mono text-xs text-subtle">{shortHash(hash)}</span>;
   return (
     <a href={url} target="_blank" rel="noreferrer" className="font-mono text-xs text-celeste-ink hover:underline">
-      {shortHash(hash)} ↗
+      {shortHash(hash)} <Icon name="out" size={12} className="inline align-[-1px]" />
     </a>
   );
 }
