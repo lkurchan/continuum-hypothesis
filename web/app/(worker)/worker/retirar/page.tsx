@@ -8,7 +8,7 @@ import { useNow } from "@/components/ui/hooks";
 import { ErrorNote, Icon, MockNotice, buttonStyles } from "@/components/ui/kit";
 import { Enter, Page, Segmented } from "@/components/ui/motion";
 import { useWorker } from "@/components/worker/WorkerContext";
-import { splitWithdrawal, totalAvailable, totalWithdrawable } from "@/components/worker/split";
+import { splitWithdrawal, totalAvailable, totalRate, totalWithdrawable } from "@/components/worker/split";
 
 type Destination = "belo" | "wallet";
 type Receipt = { amount: number; destination: Destination; txHashes: string[]; at: Date };
@@ -25,7 +25,7 @@ export default function WithdrawPage() {
   // Withdraw across every stream, not only the newest: a new batch must not lock earlier pay.
   const available = streams ? totalWithdrawable(streams, now) : 0;
 
-  if (receipt && user) return <Page><Confirmed receipt={receipt} name={user.name} beloAddress={user.beloAddress} address={user.address} remaining={streams ? totalAvailable(streams, now) : 0} /></Page>;
+  if (receipt && user) return <Page><Confirmed receipt={receipt} name={user.name} beloAddress={user.beloAddress} address={user.address} remaining={streams ? totalAvailable(streams, now) : 0} flowing={!!streams && totalRate(streams, now) > 0} /></Page>;
 
   const dest: Destination = destination ?? (user?.beloAddress ? "belo" : "wallet");
   const value = amount ?? Math.min(available, Math.floor(available / 2));
@@ -122,14 +122,14 @@ export default function WithdrawPage() {
   );
 }
 
-function Confirmed({ receipt, name, beloAddress, address, remaining }: {
-  receipt: Receipt; name: string; beloAddress?: string; address: string; remaining: number;
+function Confirmed({ receipt, beloAddress, address, remaining, flowing }: {
+  receipt: Receipt; name: string; beloAddress?: string; address: string; remaining: number; flowing: boolean;
 }) {
   const url = explorerTx(receipt.txHashes[0]);
   const [copied, setCopied] = useState<string | null>(null);
   const toBelo = receipt.destination === "belo";
   const rows: [string, React.ReactNode][] = [
-    ["Monto", `${money(receipt.amount, 2)} ARGt`],
+    ["Monto", `${groupWhole(receipt.amount)} ARGt`],
     ["Destino", <>{toBelo ? "Belo" : "Mi wallet"} <span className="font-mono text-xs text-subtle">{shortAddress((toBelo ? beloAddress : address) ?? "")}</span></>],
     ["Red", "Arbitrum One"],
   ];
@@ -148,9 +148,9 @@ function Confirmed({ receipt, name, beloAddress, address, remaining }: {
             </svg>
           </span>
         </span>
-        <Enter i={3} as="span" className="text-sm text-muted">{url ? "Confirmado en Arbitrum" : "Simulado"}</Enter>
+        {url && <Enter i={3} as="span" className="text-sm text-muted">Confirmado en Arbitrum</Enter>}
         <Enter i={4}><h1 className="tnum text-[40px] font-medium leading-[1.05] tracking-[-0.045em]">Retiraste {money(receipt.amount)}</h1></Enter>
-        <Enter i={5} as="span" className="text-[15px] text-ink-2">{toBelo ? "a tu cuenta de Belo" : "a tu wallet"} · {name}</Enter>
+        <Enter i={5} as="span" className="text-[15px] text-ink-2">{toBelo ? "a tu cuenta de Belo" : "a tu wallet"}</Enter>
       </section>
 
       <dl className="mt-8 rounded-[22px] border border-line px-[18px] py-1.5">
@@ -183,7 +183,7 @@ function Confirmed({ receipt, name, beloAddress, address, remaining }: {
       <Enter i={12} className="mt-8 flex flex-col gap-2.5">
         {url && <a href={url} target="_blank" rel="noreferrer" className={buttonStyles.secondary}>Ver en Arbiscan <Icon name="out" size={16} /></a>}
         <Link href="/worker" transitionTypes={["nav-back"]} className={buttonStyles.primary}>Volver al inicio</Link>
-        <p className="tnum mt-1 text-center text-[13px] text-muted">Te quedan {money(remaining, 2)} disponibles, y siguen sumando.</p>
+        <p className="tnum mt-1 text-center text-[13px] text-muted">Te quedan {money(remaining)} disponibles{flowing ? ", y siguen sumando" : ""}.</p>
       </Enter>
     </div>
   );
