@@ -48,7 +48,7 @@ Configurar las variables reales **solo en Production**. Mantener `CHAIN_MODE=moc
 
 Guardar `NEXT_PUBLIC_SUPABASE_URL` como **Config**: Vercel rechaza variables con prefijo público marcadas como Secret. Guardar las claves y el RPC como **Secret**. Las nueve variables de la tabla están configuradas en Production; la URL pública es Config y las otras ocho son Secret. Si una importación falla parcialmente, revisar la lista antes de repetirla: algunas variables pueden haberse guardado.
 
-La clave pública `NEXT_PUBLIC_SUPABASE_ANON_KEY` no es necesaria para estas rutas. `DEPLOYER_PK` y `ARBISCAN_API_KEY` son para contratos, no para el deploy web. `ANTHROPIC_API_KEY` queda para la integración del agente. Ninguna clave privada ni la clave de servidor de Supabase lleva prefijo `NEXT_PUBLIC_`.
+La clave pública `NEXT_PUBLIC_SUPABASE_ANON_KEY` no es necesaria para estas rutas. `DEPLOYER_PK` y `ARBISCAN_API_KEY` son para contratos, no para el deploy web. `OPENAI_API_KEY` y `OPENAI_MODEL` habilitan el asistente. Ninguna clave privada ni la clave de servidor de Supabase lleva prefijo `NEXT_PUBLIC_`.
 
 Mantener **Fluid compute** habilitado y duración de Functions de **300 segundos**. Las operaciones pueden esperar aprobación ERC-20 y receipt antes de responder. Con Fluid, 300 segundos es el valor predeterminado documentado para todos los planes; revisar que el proyecto no lo haya reducido. Ver [duración de Functions](https://vercel.com/docs/functions/configuring-functions/duration).
 
