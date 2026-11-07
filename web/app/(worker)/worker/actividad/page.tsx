@@ -4,6 +4,7 @@ import { useState } from "react";
 import { liveVested, money } from "@/components/ui/format";
 import { useNow } from "@/components/ui/hooks";
 import { ErrorNote } from "@/components/ui/kit";
+import { isFee } from "@/components/ui/agreement";
 import { Enter, Page, Segmented, useIntro } from "@/components/ui/motion";
 import { ActivityRow, describe } from "@/components/worker/ActivityRow";
 import { nameOf, useWorker } from "@/components/worker/WorkerContext";
@@ -29,7 +30,7 @@ export default function ActivityPage() {
   const earned = (streams ?? []).reduce((sum, s) => sum + liveVested(s, now), 0);
   const withdrawn = (streams ?? []).reduce((sum, s) => sum + Number(s.withdrawn), 0);
 
-  const visible = activity.filter((a) => {
+  const visible = activity.filter((a) => !isFee(a)).filter((a) => {
     const dir = describe(a, "").direction;
     return filter === "all" || (filter === "out" ? dir === "out" : dir !== "out");
   });
@@ -49,7 +50,7 @@ export default function ActivityPage() {
       </Enter>
 
       <Enter i={1} as="section" className="grid grid-cols-2 gap-2.5">
-        {[["Ganado", earned], ["Retirado", withdrawn]].map(([k, v]) => (
+        {[["Devengado", earned], ["Cobrado", withdrawn]].map(([k, v]) => (
           <div key={k as string} className="flex flex-col gap-1 rounded-[18px] bg-surface px-4 py-3.5">
             <span className="text-xs text-muted">{k}</span>
             <span className="tnum text-xl font-semibold tracking-[-0.02em]">{money((v as number) * intro)}</span>
@@ -59,7 +60,7 @@ export default function ActivityPage() {
 
       <Enter i={2}>
         <Segmented label="Filtrar movimientos" value={filter} onChange={setFilter}
-          options={[{ value: "all", label: "Todo" }, { value: "out", label: "Retiros" }, { value: "in", label: "Ingresos" }]} />
+          options={[{ value: "all", label: "Todo" }, { value: "out", label: "Cobros" }, { value: "in", label: "Tramos" }]} />
       </Enter>
 
       {error && <ErrorNote>{error}</ErrorNote>}

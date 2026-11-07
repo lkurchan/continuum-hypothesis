@@ -58,7 +58,7 @@ export default function WithdrawPage() {
   const chips = [["25%", 0.25], ["50%", 0.5], ["75%", 0.75], ["Todo", 1]] as const;
   const activeChip = chips.find(([, share]) => value > 0 && Math.floor(available * share) === value)?.[0] ?? "";
   const destinations = [
-    { id: "belo" as const, title: "Belo", sub: "Para gastar con tu tarjeta", addr: user?.beloAddress, icon: "card" as const },
+    { id: "belo" as const, title: "Belo", sub: "Pesos para pagar sueldos e insumos", addr: user?.beloAddress, icon: "card" as const },
     { id: "wallet" as const, title: "Mi wallet", sub: "Queda en ARGt", addr: user?.address, icon: "wallet" as const },
   ].filter((d) => d.addr);
 
@@ -69,20 +69,20 @@ export default function WithdrawPage() {
         <Link href="/worker" transitionTypes={["nav-back"]} aria-label="Volver al inicio" className="flex size-11 items-center justify-center rounded-full border border-line transition-transform duration-500 ease-spring active:scale-90">
           <Icon name="back" />
         </Link>
-        <h1 className="text-center text-[17px] font-semibold tracking-[-0.01em]">Retirar</h1>
+        <h1 className="text-center text-[17px] font-semibold tracking-[-0.01em]">Cobrar</h1>
       </header>
 
       <Enter i={1} as="section" className="mt-9 flex flex-col items-center gap-3.5">
         <span className="tnum text-sm text-muted">Disponible {money(available)}</span>
         <label className="flex w-full items-baseline justify-center gap-1.5 tracking-[-0.045em]">
           <span className="text-[32px] text-faint">$</span>
-          <input inputMode="numeric" autoComplete="off" aria-label="Monto a retirar en ARGt" placeholder="0"
+          <input inputMode="numeric" autoComplete="off" aria-label="Monto a cobrar en ARGt" placeholder="0"
             value={groupWhole(value)} onChange={(e) => setAmount(parseWhole(e.target.value))}
             className="tnum min-w-[1ch] max-w-[300px] bg-transparent text-[60px] font-medium tracking-[-0.045em] outline-none"
             style={{ width: `${Math.max(1, groupWhole(value).length) * 0.62}em` }} />
         </label>
         <span className={`text-[13px] ${over ? "text-danger" : "text-subtle"}`}>
-          {over ? "Supera lo que ganaste hasta ahora" : "1 ARGt = 1 peso argentino"}
+          {over ? "Supera lo que tu cliente ya fondeó" : "1 ARGt = 1 peso argentino"}
         </span>
         <div className="mt-1.5 w-full">
           <Segmented label="Montos rápidos" tone="ink" fill value={activeChip}
@@ -116,9 +116,9 @@ export default function WithdrawPage() {
       <div className="grow" />
       {error && <div className="mb-3 mt-6"><ErrorNote>{error}</ErrorNote></div>}
       <button type="button" onClick={submit} disabled={!valid || busy} className={`${buttonStyles.primary} mt-6`}>
-        {busy ? "Firmando en Arbitrum…" : valid ? `Retirar ${money(value)} ${destName}` : over ? "Supera lo disponible" : "Ingresá un monto"}
+        {busy ? "Firmando en Arbitrum…" : valid ? `Cobrar ${money(value)} ${destName}` : over ? "Supera lo disponible" : "Ingresá un monto"}
       </button>
-      <p className="mt-3 text-center text-xs text-subtle">Solo retirás lo que ya ganaste. No es un adelanto.</p>
+      <p className="mt-3 text-center text-xs text-subtle">Cobrás lo que ya prestaste y tu cliente fondeó. No es un adelanto.</p>
     </div>
     </Page>
   );
@@ -151,7 +151,7 @@ function Confirmed({ receipt, beloAddress, address, remaining, flowing }: {
           </span>
         </span>
         {url && <Enter i={3} as="span" className="text-sm text-muted">Confirmado en Arbitrum</Enter>}
-        <Enter i={4}><h1 className="tnum text-[40px] font-medium leading-[1.05] tracking-[-0.045em]">Retiraste {money(receipt.amount)}</h1></Enter>
+        <Enter i={4}><h1 className="tnum text-[40px] font-medium leading-[1.05] tracking-[-0.045em]">Cobraste {money(receipt.amount)}</h1></Enter>
         <Enter i={5} as="span" className="text-[15px] text-ink-2">{toBelo ? "a tu cuenta de Belo" : "a tu wallet"}</Enter>
       </section>
 

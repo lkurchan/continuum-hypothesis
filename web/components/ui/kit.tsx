@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { StreamView } from "@/lib/domain/types";
 import { explorerTx, initials, shortHash } from "./format";
+import { fundingCopy, type FundingState } from "./agreement";
 
 export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?: boolean }) {
   return (
@@ -46,6 +47,17 @@ export function StatusPill({ status }: { status: StreamView["status"] }) {
   return (
     <span className={`inline-flex h-[26px] items-center gap-1.5 rounded-full px-2.5 text-xs font-medium ${s.cls}`}>
       <span className={`size-1.5 rounded-full ${s.dot} ${s.pulse ? "animate-pulse-dot" : ""}`} />
+      {s.label}
+    </span>
+  );
+}
+
+/** Agreement funding state from the pivot glossary: Al día, Por vencer, Atrasado, Completo, Cancelado. */
+export function FundingPill({ state }: { state: FundingState }) {
+  const s = fundingCopy[state];
+  return (
+    <span className={`inline-flex h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-medium transition-colors duration-300 ${s.cls}`}>
+      <span className={`size-1.5 rounded-full ${s.dot} ${state === "atrasado" ? "animate-pulse-dot" : ""}`} />
       {s.label}
     </span>
   );

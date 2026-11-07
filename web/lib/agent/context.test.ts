@@ -9,13 +9,13 @@ describe("workerSnapshot", () => {
     const { service } = createDemoBackend(() => now);
     const text = await workerSnapshot(service, "worker1", now);
     expect(text).toContain("Ana García");
-    expect(text).toContain("Disponible para retirar ahora: $");
-    expect(text).toContain("fondeo inicial del pagador");
+    expect(text).toContain("Disponible para cobrar ahora: $");
+    expect(text).toContain("primer tramo fondeado por el cliente");
   });
 
   it("rejects payers and unknown users", async () => {
     const { service } = createDemoBackend();
-    await expect(workerSnapshot(service, "platform")).rejects.toThrow("solo para trabajadores");
+    await expect(workerSnapshot(service, "platform")).rejects.toThrow("solo para proveedores");
     await expect(workerSnapshot(service, "nobody")).rejects.toThrow("Usuario inexistente");
   });
 });

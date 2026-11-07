@@ -8,9 +8,9 @@ import { useWorker } from "@/components/worker/WorkerContext";
 type Message = { role: "user" | "assistant"; content: string };
 
 const suggestions = [
-  "¿Cuánto puedo retirar hoy?",
-  "¿Cuánto voy a tener a fin de mes?",
-  "Armame un presupuesto: alquiler $180.000 el 5, monotributo $30.000",
+  "¿Cuánto puedo cobrar hoy?",
+  "¿Algún cliente está atrasado?",
+  "¿Hasta cuándo tengo cubierto cada servicio?",
 ];
 
 export default function CopilotPage() {
@@ -68,7 +68,7 @@ export default function CopilotPage() {
       <div className="flex grow flex-col gap-3 py-5">
         {messages.length === 0 ? (
           <div className="flex grow flex-col justify-end gap-3">
-            <Bubble role="assistant" i={1}>Hola{user ? `, ${user.name.split(" ")[0]}` : ""}. Te ayudo a organizar lo que vas ganando. ¿Qué querés saber?</Bubble>
+            <Bubble role="assistant" i={1}>Hola{user ? `, ${user.name}` : ""}. Te ayudo a seguir lo que cobrás de cada servicio y cómo vienen fondeando tus clientes. ¿Qué querés saber?</Bubble>
             <div className="flex flex-col items-start gap-2 pl-[38px]">
               {suggestions.map((s, idx) => (
                 <button key={s} type="button" onClick={() => send(s)} style={{ "--i": 3 + idx } as React.CSSProperties}
