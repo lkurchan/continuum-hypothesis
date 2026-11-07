@@ -1,0 +1,85 @@
+# Puesta en marcha — Tarea 0
+
+## Desarrollo local
+
+Requisitos: Node.js 24, npm y Foundry. En una terminal nueva, `forge` debe estar en el PATH (`export PATH="$HOME/.foundry/bin:$PATH"` si hace falta).
+
+```bash
+nvm use
+npm ci --prefix web
+cp web/.env.example web/.env.local
+bash contracts/script/install-deps.sh
+npm run dev --prefix web
+```
+
+La app abre en `http://localhost:3000`, con páginas placeholder en `/payer` y `/worker`. Los endpoints devuelven `501 { "error": "not implemented" }`. `CHAIN_MODE=mock` es el valor inicial; el gateway mock corresponde a B2 y el real a B5. `CHAIN_MODE=real` se reserva para este último.
+
+Las dependencias de Solidity se descargan sin submódulos y no se versionan en `contracts/lib/`. El script instala forge-std `v1.17.0` y OpenZeppelin `v5.4.0`, compatible con el compilador `0.8.24`. No modifica dependencias ya instaladas.
+
+## Supabase pendiente
+
+No se creó un proyecto remoto durante esta tarea: no había una conexión autenticada de Supabase disponible. Los archivos están listos para aplicarse:
+
+1. Crear un proyecto llamado `continuum` en la organización del equipo.
+2. Ejecutar `supabase/migrations/0001_init.sql` una vez en el SQL Editor del proyecto nuevo.
+3. Ejecutar `supabase/seed.sql`. Es repetible y conserva las direcciones de wallets que ya se hayan configurado.
+4. Copiar la URL, la anon key y la service-role key en las variables correspondientes de `web/.env.local` y de Vercel.
+
+Las cuatro tablas tienen RLS habilitado y no tienen políticas de acceso público. El backend debe usar `SUPABASE_SERVICE_ROLE_KEY` exclusivamente en el servidor. El `userId` de la demo no constituye una sesión autenticada.
+
+El seed incluye `platform`, `worker1` y `worker2`, todos con la dirección cero como placeholder. Reemplazar esas direcciones por las wallets demo antes de usar `CHAIN_MODE=real`; las claves privadas van solo en `DEMO_PK_PLATFORM`, `DEMO_PK_WORKER1` y `DEMO_PK_WORKER2`. La dirección de Belo queda pendiente de confirmación.
+
+## Vercel pendiente
+
+No se creó ni desplegó un proyecto remoto durante esta tarea: no había una conexión autenticada de Vercel disponible.
+
+Importar `lkurchan/continuum-hypothesis` desde GitHub con estos ajustes:
+
+| Ajuste | Valor |
+|---|---|
+| Project name | `continuum` |
+| Framework preset | Next.js |
+| Root Directory | `web` |
+| Node.js | `24.x` |
+| Install command | `npm ci` |
+| Build command | `npm run build` |
+| Output directory | Automático para Next.js |
+| Production branch | `main` |
+
+Node.js 24 está entre las [versiones soportadas por Vercel](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions); `web/package.json` fija la misma versión mayor para el despliegue.
+
+Cargar las variables de `web/.env.example` para Production y Preview. El scaffold compila sin credenciales; mantener `CHAIN_MODE=mock` hasta integrar los módulos. Las claves privadas y la service-role key nunca llevan el prefijo `NEXT_PUBLIC_`. La integración con el agente y `ANTHROPIC_API_KEY` quedan para una tarea posterior.
+
+## Validación
+
+```bash
+npm run build --prefix web
+npm run lint --prefix web
+npm run typecheck --prefix web
+npm test --prefix web
+cd contracts
+forge build
+forge fmt --check
+forge test
+```
+
+Para correr un solo test, usar `npx vitest run <archivo>` desde `web/` o `forge test --match-test <nombre>` desde `contracts/`. En esta etapa solo hay un test de ejemplo de web; los tests de negocio corresponden a A1 y B1/B4.
+
+Verificado en la Tarea 0: build, lint, tipos y un test de Vitest; compilación de Foundry y reinstalación de dependencias en una carpeta limpia; tres páginas con HTTP 200 y siete operaciones API con HTTP 501. La migración y el seed se ejecutaron en PostgreSQL en memoria (PGlite), incluyendo repetición del seed, preservación de wallets existentes, referencias entre tablas y bloqueo de lectura con RLS para un rol sin privilegios.
+
+`npm audit --omit=dev` no reporta vulnerabilidades. La auditoría completa reporta ocho avisos moderados en la cadena de ESLint/TypeScript por una dependencia transitiva de `minimatch`; quedan pendientes de una actualización compatible del tooling.
+
+## Inicio de los módulos
+
+Desde la raíz, actualizar primero la base y elegir solo la branch del módulo propio:
+
+```bash
+git checkout main
+git pull --ff-only origin main
+git checkout -b feat/a-contrato
+# O bien: git checkout -b feat/b-backend
+# O bien: git checkout -b feat/c-pagador
+# O bien: git checkout -b feat/d-trabajador
+```
+
+Cada módulo modifica únicamente las carpetas asignadas en el PRD y se integra por PR. Las interfaces compartidas de la sección 8 están copiadas del PRD y no se cambian sin avisar al equipo.

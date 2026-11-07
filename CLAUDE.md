@@ -1,6 +1,6 @@
-# CLAUDE.md
+# Guía del repositorio
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Instrucciones de trabajo para este repositorio. Mantener `CLAUDE.md` y `AGENTS.md` sincronizados.
 
 ## Proyecto
 
@@ -38,11 +38,50 @@ Proyecto para HackaTwin (hackathon presencial, sábado 7/11/2026). La entrega ci
 
 - **SDD (spec-driven):** antes de codear un módulo tiene que existir su spec en `docs/superpowers/specs/` y su plan en `docs/superpowers/plans/`. Si el código y la spec divergen, se actualiza la spec en el mismo PR.
 - **TDD liviano en backend y contratos:** tests de la lógica de negocio (cálculo de lo devengado, límites de retiro, permisos) antes o junto con la implementación. El objetivo es que funcione, no la cobertura. El frontend no lleva tests.
-- **Git:** cada feature va en su propia branch y se integra por PR. No pushear a `main` salvo que lo pidan explícitamente. El repo todavía no tiene commits y la branch local es `master`, mientras que la principal esperada es `main`.
-- **Módulos independientes:** trabajan en paralelo 4 cuentas de Claude Code y 2 de Codex. Los módulos A (contrato), B (backend y chain), C (UI del pagador) y D (UI del trabajador y agente) tocan solo sus carpetas, listadas en la sección 9 de `PRD.md`. Las interfaces compartidas (`web/lib/domain/types.ts`, `StreamGateway` y las rutas de la API, sección 8 de `PRD.md`) no se cambian sin avisar. Todo se integra contra `MockStreamGateway` hasta que esté el real.
+- **Git:** cada feature va en su propia branch y se integra por PR. No pushear a `main` salvo que lo pidan explícitamente. La Tarea 0 es la excepción acordada: su base se publica directamente en `main`; después, cada módulo trabaja en su branch `feat/<modulo>-<tarea>`. Usar siempre Conventional Commits (`type(scope): description`), conservar la identidad Git configurada y no agregar atribuciones, firmas ni trailers de coautoría.
+- **Módulos independientes:** hay cuatro responsables de módulos y dos colaboradores de integración. Los módulos A (contrato), B (backend y chain), C (UI del pagador) y D (UI del trabajador y agente) tocan solo sus carpetas, listadas en la sección 9 de `PRD.md`. Las interfaces compartidas (`web/lib/domain/types.ts`, `StreamGateway` y las rutas de la API, sección 8 de `PRD.md`) no se cambian sin avisar. Todo se integra contra `MockStreamGateway` hasta que esté el real.
 - **SOLID:** la lógica de dominio no depende de la chain ni de la UI. El acceso a la blockchain va detrás de una interfaz, con una implementación real y una mock para la demo offline.
 - **Demo primero:** todo flujo que se muestre en el pitch necesita una salida de emergencia (datos sembrados o un modo mock) por si falla la red en vivo.
 
 ## Comandos
 
-Todavía no hay código ni stack elegido. Cuando se scaffoldee, completar esta sección con build, lint, tests (incluido cómo correr un solo test) y deploy.
+Requisitos: Node.js 24 (ver `.nvmrc`), npm y Foundry (`forge`, `cast`, `anvil`). Si Foundry no está en el PATH, agregar `~/.foundry/bin`. El compilador es Solidity 0.8.24; las dependencias están fijadas en `contracts/script/install-deps.sh`.
+
+Desde la raíz:
+
+```bash
+nvm use
+npm ci --prefix web
+cp web/.env.example web/.env.local
+bash contracts/script/install-deps.sh
+npm run dev --prefix web
+```
+
+Validación de web (desde `web/`):
+
+```bash
+npm run build
+npm run lint
+npm run typecheck
+npm test
+npm run test:watch
+npx vitest run lib/chain/constants.test.ts
+# Un archivo cualquiera: npx vitest run <archivo>
+```
+
+Contratos (desde `contracts/`):
+
+```bash
+forge build
+forge fmt --check
+forge test
+# Un test individual: forge test --match-test <nombre>
+# Fork local, con ARBITRUM_RPC_URL exportada:
+anvil --fork-url "$ARBITRUM_RPC_URL"
+# Perfil Arbitrum, con ARBITRUM_RPC_URL exportada:
+FOUNDRY_PROFILE=arbitrum forge build
+```
+
+Todavía no hay tests de negocio del contrato: corresponden a A1. Sus funciones revierten con `NotImplemented()` y pueden producir advertencias de parámetros sin usar. `vestedAt`, los gateways y las rutas HTTP también son stubs; la API responde 501 hasta B4.
+
+Deploy web: conectar el repositorio en Vercel con Root Directory `web`, Node.js `24.x`, build `npm run build` e instalación `npm ci`. Después de vincular el proyecto, el comando manual desde `web/` es `npx vercel --prod`. Ver `docs/SETUP.md` para Supabase, variables y pendientes. No hay un deploy onchain en la Tarea 0.

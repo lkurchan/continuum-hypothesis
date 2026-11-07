@@ -181,10 +181,13 @@ Los errores devuelven `{ error: string }` con status 4xx/5xx. El usuario "loguea
 Regla general: cada módulo toca **solo sus carpetas**. Las interfaces de la sección 8 se crean en la Tarea 0 y después solo se cambian avisando al resto. Cada tarea va en su branch `feat/<modulo>-<tarea>` y entra por PR.
 
 ### Tarea 0 — Base del repo (una persona, unos 30 min, bloquea al resto)
-- [ ] Crear la branch `main`, scaffold de `web/` (Next.js, TypeScript, Tailwind, ESLint) y de `contracts/` (Foundry con OpenZeppelin).
-- [ ] Escribir los tipos (8.1), la interfaz `StreamGateway` (8.2), los stubs de las rutas de la API (8.3) y `web/.env.example`.
+- [x] Crear la branch `main`, scaffold de `web/` (Next.js, TypeScript, Tailwind, ESLint) y de `contracts/` (Foundry con OpenZeppelin).
+- [x] Escribir los tipos (8.1), la interfaz `StreamGateway` (8.2), los stubs de las rutas de la API (8.3) y `web/.env.example`.
+- [x] Preparar y validar la migración inicial de Supabase y el seed de los tres usuarios demo.
 - [ ] Crear el proyecto de Supabase y el de Vercel (Vercel linkeado al repo).
-- [ ] Hacer el primer commit en `main`. A partir de acá, todos branchean.
+- [x] Hacer el primer commit en `main`. A partir de acá, todos branchean.
+
+La base local está validada; los proyectos remotos quedan pendientes de conexión autenticada. Ver `docs/SETUP.md` para comandos, configuración de servicios y arranque de branches.
 
 ### Tareas operativas (cualquiera, **apenas arranca el día**: son las bloqueantes reales)
 - [ ] Pedir ARGt en Arbitrum a los mentores de Twin (o comprarlo con USDT0 en el pool de Curve). Conseguir lo suficiente para montos creíbles.
