@@ -26,6 +26,8 @@ export function StreamDetail({ stream, workerName, now }: { stream: StreamView; 
   const first = workerName.split(" ")[0];
   const keep = Math.min(vested, deposited);
   const refund = deposited - keep;
+  // Worked but never deposited: cancelling leaves it unpaid onchain.
+  const unfunded = Math.max(0, vested - deposited);
   const span = stream.end - stream.start;
   const fmt = (t: number) => (span < 86_400 ? clock(t) : dateLabel(t));
 
@@ -103,9 +105,15 @@ export function StreamDetail({ stream, workerName, now }: { stream: StreamView; 
           <div className="tnum flex flex-col gap-1.5 text-sm">
             <span className="flex justify-between"><span className="text-ink-2">{first} se queda con</span><strong>{money(keep, 2)}</strong></span>
             <span className="flex justify-between"><span className="text-ink-2">Vuelve a tu wallet</span><strong>{money(refund, 2)}</strong></span>
+            {unfunded >= 0.01 && (
+              <span className="flex justify-between text-danger"><span>Trabajado sin fondear</span><strong>{money(unfunded, 2)}</strong></span>
+            )}
           </div>
+          {unfunded >= 0.01 && (
+            <p className="text-[13px] leading-snug text-danger">{first} ya trabajó esto y no lo depositaste: si cancelás, no lo cobra.</p>
+          )}
           <div className="flex gap-2">
-            <button type="button" onClick={cancel} disabled={busy} className={`${buttonStyles.small} grow bg-danger`}>{busy ? "Cancelando…" : "Sí, cancelar"}</button>
+            <button type="button" onClick={cancel} disabled={busy} className={`${buttonStyles.dangerSolid} grow`}>{busy ? "Cancelando…" : "Sí, cancelar"}</button>
             <button type="button" onClick={() => setConfirming(false)} className={buttonStyles.ghost}>Volver</button>
           </div>
         </div>

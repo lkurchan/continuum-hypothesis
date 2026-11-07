@@ -21,6 +21,7 @@ export const buttonStyles = {
   secondary: `${buttonBase} h-14 rounded-2xl border border-line bg-white px-6 text-base text-ink`,
   small: `${buttonBase} h-11 rounded-xl bg-ink px-4 text-sm text-white disabled:bg-track disabled:text-subtle`,
   danger: `${buttonBase} h-11 rounded-xl border border-danger-line bg-white px-4 text-sm text-danger`,
+  dangerSolid: `${buttonBase} h-11 rounded-xl bg-danger px-4 text-sm text-white disabled:bg-track disabled:text-subtle`,
   ghost: `${buttonBase} h-11 rounded-xl border border-line bg-white px-4 text-sm text-ink`,
 };
 
