@@ -286,3 +286,17 @@ B1–B6 están implementados y verificados. El contrato está desplegado y se co
 - **Dirección visual**: llega desde Claude Design.
 - Montos y duración de los streams demo, según cuánto ARGt consigamos.
 - La dirección de Belo que recibe ARGt en Arbitrum.
+
+### Fondeo posterior en la cuenta unificada
+
+La cuenta demo recupera los contratos reales del pagador incluso después de recargar. Desde su detalle se puede agregar un tramo o completar el fondeo, ver el remanente, la fecha cubierta, alertas de agotamiento y el comprobante. El catálogo ilustrativo nunca se usa como destino de depósitos. Esta ampliación se prepara localmente hasta autorización de publicación.
+
+### Reputación en la cuenta demo
+
+La interfaz presenta la calificación de pago calculada por el endpoint de reputación: historial de contratos, fondeo completo, atrasos y última transacción. Incluye un resumen automático; no equivale a reseñas escritas de proveedores, que aún no tienen almacenamiento ni API. Se prepara localmente junto al fondeo por tramos.
+
+La reputación se consulta desde el contrato de la empresa que paga al usuario, no desde la cuenta propia. Las contrapartes ilustrativas sin id real no reciben una calificación inventada. El acceso a fondeos pendientes muestra la lista completa en un modal centrado.
+
+### Perfiles ilustrativos y publicación
+
+Por pedido del usuario, Estudio Norte, Órbita Digital y Mercado Sur incluyen reputación y reseñas ficticias identificadas como perfil demo. No se atribuyen transacciones verificadas a estos perfiles, ni se reemplaza información de clientes reales. El usuario autoriza publicar la ampliación de pagos parciales y sus ajustes de UI mediante PR.
