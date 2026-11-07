@@ -10,7 +10,7 @@ const request = (messages: unknown, userId = "worker1") => new Request("http://l
 });
 beforeEach(() => {
   backend = createDemoBackend(() => 1000);
-  vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("OPENAI_API_KEY", "");
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -26,7 +26,12 @@ it("reports missing provider configuration for a valid worker conversation", asy
   expect(result.headers.get("Cache-Control")).toBe("no-store");
 });
 
-it("rejects a payer conversation before checking provider configuration", async () => {
-  const result = await POST(request([{ role: "user", content: "Hola" }], "platform"));
-  expect(result.status).toBe(403);
+it("accepts a client conversation and reports missing provider configuration", async () => {
+  const result = await POST(request([{ role: "user", content: "¿Hasta cuándo estoy cubierto?" }], "platform"));
+  expect(result.status).toBe(503);
+});
+
+it("rejects unknown users before checking provider configuration", async () => {
+  const result = await POST(request([{ role: "user", content: "Hola" }], "nobody"));
+  expect(result.status).toBe(404);
 });
