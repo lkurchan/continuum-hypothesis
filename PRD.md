@@ -212,7 +212,7 @@ La base local, Supabase remoto y el backend real en Vercel están validados. El 
 ### Módulo A — Contrato (`contracts/`)
 - [x] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
 - [x] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
-- [ ] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**. Publicar la dirección en el canal del equipo.
+- [x] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**: `ContinuumStreams` figura con Source Code Verified / Exact Match en `0xB98D30CC1e8D234A6234569848366fE30F3fF799`; dirección disponible en README.
 - [x] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
 - [x] A5. Integración con B y primer seed real por API comprobados en B6. Renovar el horario del lote para el ensayo/pitch.
 

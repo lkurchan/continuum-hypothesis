@@ -15,3 +15,4 @@
 - Cancelación verificada nuevamente con el build corregido: el pago continúa seleccionado y conserva el comprobante del reintegro.
 - Chat sin clave: error de configuración visible, sin afectar el resto de las pantallas. No se verificó una respuesta real del proveedor.
 - Production se verificará sobre el commit de merge. Los pagos reales previos están documentados en `docs/B6.md`; este ensayo no envía transacciones mainnet.
+- Arbiscan confirmó `Source Code Verified / Exact Match` para [ContinuumStreams](https://arbiscan.io/address/0xB98D30CC1e8D234A6234569848366fE30F3fF799#code), compilador 0.8.24, optimización 200 runs y EVM paris. A3 se actualizó en el PRD.
