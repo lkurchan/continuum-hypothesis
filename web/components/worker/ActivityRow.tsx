@@ -11,6 +11,8 @@ export function describe(a: Activity, payerName: string): { title: string; direc
     case "create": return { title: `${payerName} fondeó tu pago`, direction: "in", sign: "+" };
     case "topup": return { title: `${payerName} recargó tu pago`, direction: "in", sign: "+" };
     case "cancel": return { title: "Pago cancelado", direction: "neutral", sign: "" };
+    // Fee rows are filtered out for providers in StreamService.activity; kept for exhaustiveness.
+    case "fee": return { title: "Comisión Continuum", direction: "neutral", sign: "" };
   }
 }
 

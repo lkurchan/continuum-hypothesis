@@ -14,6 +14,7 @@ const kinds: Record<ActivityKind, string> = {
   withdraw: "retiro",
   cancel: "cancelación (reintegro al pagador)",
   agent_payment: "pago",
+  fee: "comisión Continuum del 0,05% (la paga el cliente)",
 };
 const date = (sec: number) => new Date(sec * 1000).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", dateStyle: "medium", timeStyle: "short" });
 
