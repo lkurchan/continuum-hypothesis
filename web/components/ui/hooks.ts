@@ -44,7 +44,7 @@ export function useNow(ms = 100): number {
   return now;
 }
 
-/** Streams and activity for a user, with a manual refresh after each transaction. */
+/** Refresh visible accounts across devices and after each local transaction. */
 export function useAccount(userId: string | undefined) {
   const [streams, setStreams] = useState<StreamView[] | null>(null);
   const [activity, setActivity] = useState<Activity[]>([]);
@@ -54,13 +54,33 @@ export function useAccount(userId: string | undefined) {
   useEffect(() => {
     if (!userId) return;
     let alive = true;
-    Promise.all([api.streams(userId), api.activity(userId)]).then(([s, a]) => {
-      if (!alive) return;
-      setStreams(s);
-      setActivity([...a].sort((x, y) => y.createdAt.localeCompare(x.createdAt)));
-      setError(null);
-    }).catch((e: Error) => alive && setError(e.message));
-    return () => { alive = false; };
+    let pending = false;
+    const load = async () => {
+      if (pending || !alive) return;
+      pending = true;
+      try {
+        const [s, a] = await Promise.all([api.streams(userId), api.activity(userId)]);
+        if (!alive) return;
+        setStreams(s);
+        setActivity([...a].sort((x, y) => y.createdAt.localeCompare(x.createdAt)));
+        setError(null);
+      } catch (e) {
+        if (alive) setError((e as Error).message);
+      } finally {
+        pending = false;
+      }
+    };
+    const loadVisible = () => { if (document.visibilityState === "visible") void load(); };
+    void load();
+    const interval = setInterval(loadVisible, 5000);
+    window.addEventListener("focus", loadVisible);
+    document.addEventListener("visibilitychange", loadVisible);
+    return () => {
+      alive = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", loadVisible);
+      document.removeEventListener("visibilitychange", loadVisible);
+    };
   }, [userId, version]);
 
   const refresh = useCallback(() => setVersion((v) => v + 1), []);

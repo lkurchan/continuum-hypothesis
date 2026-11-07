@@ -10,6 +10,7 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 function parseMessages(value: unknown): ChatMessage[] {
   requireCondition(Array.isArray(value) && value.length > 0 && value.length <= 40, "Se requieren entre 1 y 40 mensajes.");
   const messages = value.map((m) => {
+    requireCondition(m !== null && typeof m === "object" && !Array.isArray(m), "Mensaje inválido.");
     const item = m as Partial<ChatMessage>;
     requireCondition((item.role === "user" || item.role === "assistant") && typeof item.content === "string"
       && item.content.trim().length > 0 && item.content.length <= 4000, "Mensaje inválido.");

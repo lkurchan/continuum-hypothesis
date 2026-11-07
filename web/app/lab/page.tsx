@@ -57,6 +57,7 @@ export default function LabPage() {
   }, [payer]);
 
   const run = async (label: string, action: () => Promise<{ detail: string; hash?: string }>) => {
+    if (mode !== "mock" || busy) return;
     setBusy(label);
     try {
       const r = await action();
@@ -132,7 +133,7 @@ export default function LabPage() {
       <div className="grid grow gap-6 p-6 xl:grid-cols-[320px_auto_1fr]">
         <aside className="flex flex-col gap-4">
           {error && <ErrorNote>{error}</ErrorNote>}
-          {mode === "real" && <ErrorNote>Cada escenario firma una transacción real en Arbitrum.</ErrorNote>}
+          {mode === "real" && <ErrorNote>Los escenarios automáticos solo están disponibles en mock. Para operar con fondos reales, usá los formularios del pagador y del trabajador.</ErrorNote>}
 
           <label className="flex flex-col gap-1.5 text-[13px] text-muted">
             Celular muestra a
@@ -144,7 +145,7 @@ export default function LabPage() {
 
           <section aria-label="Escenarios" className="flex flex-col overflow-hidden rounded-3xl border border-line bg-white">
             {scenarios.map((s) => (
-              <button key={s.label} type="button" disabled={!!busy || s.disabled} onClick={() => run(s.label, s.action)}
+              <button key={s.label} type="button" disabled={mode !== "mock" || !!busy || s.disabled} onClick={() => run(s.label, s.action)}
                 className="flex flex-col items-start gap-0.5 border-b border-line-soft px-4 py-3 text-left transition last:border-0 hover:bg-page disabled:opacity-50">
                 <span className="text-sm font-medium">{busy === s.label ? "Ejecutando…" : s.label}</span>
                 <span className="text-xs text-subtle">{s.hint}</span>

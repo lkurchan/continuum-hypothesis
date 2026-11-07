@@ -80,7 +80,7 @@ export default function PayerPanel() {
               );
             })}
           </Enter>
-          {current && <StreamDetail key={current.id} stream={current} workerName={name(current.workerId)} now={now} />}
+          {current && <StreamDetail key={current.id} stream={current} workerName={name(current.workerId)} now={now} onSelect={() => setSelected(current.id)} />}
         </div>
       )}
     </div>

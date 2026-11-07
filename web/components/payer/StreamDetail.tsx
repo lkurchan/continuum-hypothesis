@@ -9,7 +9,7 @@ import { usePayer } from "./PayerContext";
 
 type Tx = { message: string; hash: string };
 
-export function StreamDetail({ stream, workerName, now }: { stream: StreamView; workerName: string; now: number }) {
+export function StreamDetail({ stream, workerName, now, onSelect }: { stream: StreamView; workerName: string; now: number; onSelect: () => void }) {
   const { user, refresh } = usePayer();
   const [amount, setAmount] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -32,6 +32,7 @@ export function StreamDetail({ stream, workerName, now }: { stream: StreamView; 
   const fmt = (t: number) => (span < 86_400 ? clock(t) : dateLabel(t));
 
   const run = async (op: () => Promise<Tx>) => {
+    onSelect();
     setBusy(true);
     setError(null);
     try {
@@ -95,7 +96,7 @@ export function StreamDetail({ stream, workerName, now }: { stream: StreamView; 
             </div>
           )}
           {value > room && <span className="text-xs text-danger">Máximo {money(room)}</span>}
-          <button type="button" onClick={() => { setConfirming(true); setTx(null); }} className={buttonStyles.danger}>Cancelar pago</button>
+          <button type="button" onClick={() => { onSelect(); setConfirming(true); setTx(null); }} className={buttonStyles.danger}>Cancelar pago</button>
         </div>
       )}
 

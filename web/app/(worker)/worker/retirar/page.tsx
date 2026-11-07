@@ -11,7 +11,7 @@ import { useWorker } from "@/components/worker/WorkerContext";
 import { splitWithdrawal, totalAvailable, totalRate, totalWithdrawable } from "@/components/worker/split";
 
 type Destination = "belo" | "wallet";
-type Receipt = { amount: number; destination: Destination; txHashes: string[]; at: Date };
+type Receipt = { amount: number; requested: number; failure?: string; destination: Destination; txHashes: string[]; at: Date };
 
 export default function WithdrawPage() {
   const { user, streams, refresh } = useWorker();
@@ -38,17 +38,19 @@ export default function WithdrawPage() {
     setBusy(true);
     setError(null);
     const done: { amount: number; txHash: string }[] = [];
+    let failure: string | undefined;
     try {
       for (const part of splitWithdrawal(streams, Date.now() / 1000, value)) {
         const { txHash } = await api.withdraw(user.id, part.streamId, String(part.amount), dest);
         done.push({ amount: part.amount, txHash });
       }
     } catch (e) {
-      setError((e as Error).message);
+      failure = (e as Error).message;
+      setError(failure);
     } finally {
       // Show whatever went through, even if a later transaction failed.
-      if (done.length) setReceipt({ amount: done.reduce((t, d) => t + d.amount, 0), destination: dest, txHashes: done.map((d) => d.txHash), at: new Date() });
-      if (done.length) refresh();
+      if (done.length) setReceipt({ amount: done.reduce((t, d) => t + d.amount, 0), requested: value, failure, destination: dest, txHashes: done.map((d) => d.txHash), at: new Date() });
+      refresh();
       setBusy(false);
     }
   };
@@ -152,6 +154,10 @@ function Confirmed({ receipt, beloAddress, address, remaining, flowing }: {
         <Enter i={4}><h1 className="tnum text-[40px] font-medium leading-[1.05] tracking-[-0.045em]">Retiraste {money(receipt.amount)}</h1></Enter>
         <Enter i={5} as="span" className="text-[15px] text-ink-2">{toBelo ? "a tu cuenta de Belo" : "a tu wallet"}</Enter>
       </section>
+
+      {receipt.failure && (
+        <div className="mt-5"><ErrorNote>Retiro parcial: se confirmaron {money(receipt.amount)} de los {money(receipt.requested)} solicitados. {receipt.failure} Revisá el saldo y los movimientos antes de hacer otro retiro.</ErrorNote></div>
+      )}
 
       <dl className="mt-8 rounded-[22px] border border-line px-[18px] py-1.5">
         {rows.map(([k, v], idx) => (
