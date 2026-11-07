@@ -46,7 +46,11 @@ try {
     ensure((await fetch(origin + path, { method: "POST", headers: { origin, "x-middleware-subrequest": "middleware:middleware:middleware:middleware:middleware" } })).status === 401,
       `Mutación anónima abierta: ${path}`);
   }
-  const page = await fetch(origin + "/worker", { redirect: "manual" });
+  for (const path of ["/worker", "/payer"]) {
+    const entry = await fetch(origin + path, { redirect: "manual" });
+    ensure(entry.status === 307 && new URL(entry.headers.get("location"), origin).pathname === "/demo", `Entrada no unificada: ${path}.`);
+  }
+  const page = await fetch(origin + "/demo", { redirect: "manual" });
   ensure(page.status === 307 && new URL(page.headers.get("location"), origin).pathname === "/login", "La página no redirige al login.");
   const loginPage = await fetch(origin + "/login?next=/payer/asistente");
   ensure(loginPage.status === 200 && (await loginPage.text()).includes("Ingresá a la demo"), "La pantalla de login no está disponible.");

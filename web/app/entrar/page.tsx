@@ -19,7 +19,7 @@ export default function EntryPage() {
 
   const enter = (user: DemoUser) => {
     rememberUser(user);
-    router.push(user.role === "payer" ? "/payer" : "/worker");
+    router.push("/demo");
   };
 
   const ordered = users ? [...users].sort((a, b) => (a.role === b.role ? 0 : a.role === "worker" ? -1 : 1)) : [];
@@ -63,7 +63,7 @@ export default function EntryPage() {
                 : <Avatar name={u.name} tone={i === 0 ? "celeste" : "neutral"} />}
               <span className="flex grow flex-col gap-0.5">
                 <span className="text-base font-medium">{u.name}</span>
-                <span className="text-[13px] text-muted">{u.role === "payer" ? "Cliente · contrata y fondea servicios" : "Proveedor · cobra sus servicios"}</span>
+                <span className="text-[13px] text-muted">Nodo Software SRL · cobrás y pagás</span>
               </span>
               <Icon name="chevron" className="text-faint transition-transform duration-500 ease-spring group-hover:translate-x-0.5" />
             </button>
