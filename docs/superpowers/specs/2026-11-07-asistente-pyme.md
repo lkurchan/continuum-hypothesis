@@ -81,3 +81,7 @@ Las pruebas de streaming usan un proveedor simulado: texto para ambos roles, arg
 ## Diagnóstico del proveedor
 
 Los errores de OpenAI se registran solo con nombre, estado HTTP, código y request id. No se registran claves, prompts, mensajes ni cuerpos de error. Las variables de proveedor se normalizan quitando espacios y saltos de línea exteriores, frecuentes al pegarlas en el deploy. La respuesta al usuario conserva el error seguro.
+
+## Consultas sin propuestas
+
+Si el último mensaje pide explícitamente no proponer/crear/armar/generar acuerdos, o consultar sin propuestas, el servidor fuerza `tool_choice: none`. También descarta cualquier tool-call inesperado en esa respuesta. Se aplica al último mensaje para que una consulta posterior pueda volver a solicitar una propuesta. Un pedido de no ejecutar pagos no desactiva por sí solo las propuestas: estas nunca ejecutan pagos.

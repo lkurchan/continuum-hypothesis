@@ -113,6 +113,45 @@ it("asks for a missing price even after the model has written text", async () =>
 });
 
 it.each([
+  "La propuesta anterior fue descartada; no propongas acuerdos nuevos. Resumí los existentes.",
+  "NO CREÉS nuevos acuerdos. Solo quiero el resumen.",
+  "No quiero que me propongas acuerdos. ¿Cuánto falta fondear?",
+  "Mostrá el resumen, sin propuestas nuevas.",
+])("does not repeat an earlier proposal when the latest message opts out: %s", async (content) => {
+  provider({ content: "Este es el resumen." }, { tool_calls: [{ index: 0, function: {
+    name: "proponer_acuerdo", arguments: JSON.stringify({ items: [{ workerId: "worker1", totalAmount: 100 }], period: 900, fundPercent: 50 }),
+  } }] });
+  const response = await POST(request([
+    { role: "user", content: "Proponé un acuerdo con Ana por 100 pesos." },
+    { role: "assistant", content: "Te armé la propuesta." },
+    { role: "user", content },
+  ], "platform"));
+  expect(await response.text()).toBe("Este es el resumen.");
+  expect(complete.mock.calls[0][0].tool_choice).toBe("none");
+});
+
+it("allows a later explicit proposal request without executing payments", async () => {
+  provider({ tool_calls: [{ index: 0, function: { name: "proponer_acuerdo",
+    arguments: JSON.stringify({ items: [{ workerId: "worker1", totalAmount: 100 }], period: 900, fundPercent: 50 }),
+  } }] });
+  const response = await POST(request([
+    { role: "user", content: "No propongas acuerdos. Resumí mi cuenta." },
+    { role: "assistant", content: "Este es el resumen." },
+    { role: "user", content: "Ahora proponé un acuerdo con Ana por 100 pesos; no ejecutes pagos." },
+  ], "platform"));
+  expect(await response.text()).toContain(PROPOSAL_SEPARATOR);
+  expect(complete.mock.calls[0][0].tool_choice).toBe("auto");
+});
+
+it("does not leave an empty stream if the provider sends only a forbidden proposal", async () => {
+  provider({ tool_calls: [{ index: 0, function: { name: "proponer_acuerdo", arguments: "{}" } }] });
+  const response = await POST(request([{ role: "user", content: "No propongas acuerdos. Resumí mi cuenta." }], "platform"));
+  const text = await response.text();
+  expect(text).toContain("No generé ninguna propuesta");
+  expect(text).not.toContain(PROPOSAL_SEPARATOR);
+});
+
+it.each([
   [new Error("private-provider-detail"), "No pude responder ahora"],
   [new OpenAI.RateLimitError(429, undefined, "private-provider-detail", new Headers()), "mucha demanda"],
 ])("returns a safe provider error", async (error, expected) => {
