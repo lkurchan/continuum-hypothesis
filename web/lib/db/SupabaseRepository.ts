@@ -69,7 +69,7 @@ export class SupabaseRepository implements Repository {
       .in("stream_id", streams.map(s => s.id)).order("created_at", { ascending: false }).returns<ActivityRow[]>();
     this.check(error);
     return (data ?? []).map(r => ({ id: r.id, streamId: r.stream_id, kind: r.kind, amount: normalizeAmount(r.amount),
-      txHash: r.tx_hash, explorerUrl: `https://arbiscan.io/tx/${r.tx_hash}`, userId: r.user_id, createdAt: r.created_at,
+      txHash: r.tx_hash, explorerUrl: r.tx_hash ? `https://arbiscan.io/tx/${r.tx_hash}` : "", userId: r.user_id, createdAt: r.created_at,
       ...(r.note ? { note: r.note } : {}) }));
   }
 }

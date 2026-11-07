@@ -35,6 +35,9 @@ do $$ begin
         raise exception 'RPC did not roll back metadata and activity together';
     end if;
 end $$;
+-- Fee rows, including a pending fee without a transaction hash, are valid activity.
+insert into public.activity (stream_id, kind, amount, tx_hash, user_id, note)
+values ('ci-1', 'fee', '0.05', '', 'platform', 'fee pendiente');
 insert into public.agent_rules (worker_id, label, kind, amount, day_of_month, destination)
 values ('worker1', 'CI rule', 'fixed', 1, 1, 'wallet');
 reset role;
