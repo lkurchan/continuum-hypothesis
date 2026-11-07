@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { clock, dateLabel, liveAvailable, liveParts, liveStatus, liveVested, money, ratePerSecond } from "@/components/ui/format";
+import { clock, dateLabel, liveParts, liveStatus, liveVested, money } from "@/components/ui/format";
 import { useNow } from "@/components/ui/hooks";
 import { Avatar, ErrorNote, Icon, InfoIcon, LiveChip, Skeleton, StatusPill, StreamLine, buttonStyles } from "@/components/ui/kit";
 import { Enter, Page, useIntro } from "@/components/ui/motion";
 import { ActivityRow } from "@/components/worker/ActivityRow";
 import { nameOf, primaryStream, useWorker } from "@/components/worker/WorkerContext";
+import { totalAvailable, totalRate, totalWithdrawable } from "@/components/worker/split";
+import type { StreamView } from "@/lib/domain/types";
 
 export default function WorkerHome() {
   const { user, users, streams, activity, error } = useWorker();
@@ -35,7 +37,7 @@ export default function WorkerHome() {
       {!stream ? (
         <Enter i={1} as="p" className="mt-24 text-center text-[15px] text-muted">Todavía no tenés pagos en curso.</Enter>
       ) : (
-        <StreamSummary stream={stream} now={now} />
+        <StreamSummary stream={stream} streams={streams} now={now} />
       )}
 
       {activity.length > 0 && (
@@ -54,14 +56,17 @@ export default function WorkerHome() {
   );
 }
 
-function StreamSummary({ stream, now }: { stream: NonNullable<ReturnType<typeof primaryStream>>; now: number }) {
+function StreamSummary({ stream, streams, now }: { stream: StreamView; streams: StreamView[]; now: number }) {
   const intro = useIntro();
-  const available = liveAvailable(stream, now) * intro;
+  // The hero adds up every stream: a new batch must never hide money already earned.
+  const available = totalAvailable(streams, now) * intro;
+  const withdrawable = totalWithdrawable(streams, now);
+  const funding = streams.filter((s) => Number(s.deposited) - Number(s.withdrawn) > 0).length;
   const vested = liveVested(stream, now);
   const total = Number(stream.totalAmount);
   const deposited = Number(stream.deposited);
   const status = liveStatus(stream, now);
-  const rate = status === "streaming" ? ratePerSecond(stream) : 0;
+  const rate = totalRate(streams, now);
   const parts = liveParts(available);
   const capped = status === "streaming" && vested >= deposited;
   const span = stream.end - stream.start;
@@ -73,7 +78,7 @@ function StreamSummary({ stream, now }: { stream: NonNullable<ReturnType<typeof 
     <>
       <Enter i={1} as="section" className="mt-10 flex flex-col gap-2.5">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted">Disponible para retirar</span>
+          <span className="text-sm text-muted">Disponible para retirar{funding > 1 ? ` · ${funding} pagos` : ""}</span>
           <span className="rounded-md border border-line px-[7px] py-[3px] text-[11px] font-semibold tracking-[0.04em] text-ink-2">ARGt</span>
         </div>
         <div className="tnum flex items-baseline whitespace-nowrap tracking-[-0.045em]" aria-live="off">
@@ -124,8 +129,8 @@ function StreamSummary({ stream, now }: { stream: NonNullable<ReturnType<typeof 
       </Enter>
 
       <Enter i={3} className="mt-5 flex flex-col">
-        <Link href="/worker/retirar" transitionTypes={["nav-forward"]} aria-disabled={available < 1 && intro === 1}
-          className={`${buttonStyles.primary} ${available < 1 && intro === 1 ? "pointer-events-none bg-track text-subtle" : ""}`}>
+        <Link href="/worker/retirar" transitionTypes={["nav-forward"]} aria-disabled={withdrawable < 1 && intro === 1}
+          className={`${buttonStyles.primary} ${withdrawable < 1 && intro === 1 ? "pointer-events-none bg-track text-subtle" : ""}`}>
           Retirar <Icon name="arrow" />
         </Link>
       </Enter>

@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { api } from "@/components/ui/api";
-import { explorerTx, groupWhole, liveAvailable, money, parseWhole, shortAddress, shortHash } from "@/components/ui/format";
+import { explorerTx, groupWhole, money, parseWhole, shortAddress, shortHash } from "@/components/ui/format";
 import { useNow } from "@/components/ui/hooks";
 import { ErrorNote, Icon, MockNotice, buttonStyles } from "@/components/ui/kit";
 import { Enter, Page, Segmented } from "@/components/ui/motion";
-import { primaryStream, useWorker } from "@/components/worker/WorkerContext";
+import { useWorker } from "@/components/worker/WorkerContext";
+import { splitWithdrawal, totalAvailable, totalWithdrawable } from "@/components/worker/split";
 
 type Destination = "belo" | "wallet";
-type Receipt = { amount: number; destination: Destination; txHash: string; at: Date };
+type Receipt = { amount: number; destination: Destination; txHashes: string[]; at: Date };
 
 export default function WithdrawPage() {
   const { user, streams, refresh } = useWorker();
@@ -21,28 +22,33 @@ export default function WithdrawPage() {
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
 
-  const stream = streams ? primaryStream(streams, now) : null;
-  const available = stream ? Math.floor(liveAvailable(stream, now)) : 0;
+  // Withdraw across every stream, not only the newest: a new batch must not lock earlier pay.
+  const available = streams ? totalWithdrawable(streams, now) : 0;
 
-  if (receipt && user) return <Page><Confirmed receipt={receipt} name={user.name} beloAddress={user.beloAddress} address={user.address} remaining={stream ? liveAvailable(stream, now) : 0} /></Page>;
+  if (receipt && user) return <Page><Confirmed receipt={receipt} name={user.name} beloAddress={user.beloAddress} address={user.address} remaining={streams ? totalAvailable(streams, now) : 0} /></Page>;
 
   const dest: Destination = destination ?? (user?.beloAddress ? "belo" : "wallet");
   const value = amount ?? Math.min(available, Math.floor(available / 2));
   const over = value > available;
-  const valid = value > 0 && !over && !!stream;
+  const valid = value > 0 && !over && !!streams;
   const destName = dest === "belo" ? "a Belo" : "a tu wallet";
 
   const submit = async () => {
-    if (!user || !stream || !valid) return;
+    if (!user || !streams || !valid) return;
     setBusy(true);
     setError(null);
+    const done: { amount: number; txHash: string }[] = [];
     try {
-      const { txHash } = await api.withdraw(user.id, stream.id, String(value), dest);
-      setReceipt({ amount: value, destination: dest, txHash, at: new Date() });
-      refresh();
+      for (const part of splitWithdrawal(streams, Date.now() / 1000, value)) {
+        const { txHash } = await api.withdraw(user.id, part.streamId, String(part.amount), dest);
+        done.push({ amount: part.amount, txHash });
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      // Show whatever went through, even if a later transaction failed.
+      if (done.length) setReceipt({ amount: done.reduce((t, d) => t + d.amount, 0), destination: dest, txHashes: done.map((d) => d.txHash), at: new Date() });
+      if (done.length) refresh();
       setBusy(false);
     }
   };
@@ -119,8 +125,8 @@ export default function WithdrawPage() {
 function Confirmed({ receipt, name, beloAddress, address, remaining }: {
   receipt: Receipt; name: string; beloAddress?: string; address: string; remaining: number;
 }) {
-  const url = explorerTx(receipt.txHash);
-  const [copied, setCopied] = useState(false);
+  const url = explorerTx(receipt.txHashes[0]);
+  const [copied, setCopied] = useState<string | null>(null);
   const toBelo = receipt.destination === "belo";
   const rows: [string, React.ReactNode][] = [
     ["Monto", `${money(receipt.amount, 2)} ARGt`],
@@ -154,18 +160,22 @@ function Confirmed({ receipt, name, beloAddress, address, remaining }: {
             <dd className="tnum text-sm font-medium">{v}</dd>
           </div>
         ))}
-        <div className="animate-enter flex min-h-[52px] items-center justify-between" style={{ "--i": 10 } as React.CSSProperties}>
-          <dt className="text-sm text-muted">Transacción</dt>
-          <dd className="flex items-center gap-1">
-            <span className="font-mono text-[13px] font-medium">{shortHash(receipt.txHash)}</span>
-            <button type="button" aria-label="Copiar hash" className="flex size-9 items-center justify-center rounded-[10px] text-muted"
-              onClick={() => navigator.clipboard?.writeText(receipt.txHash).then(() => setCopied(true))}>
-              {copied ? <Icon name="check" size={16} /> : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
-              )}
-            </button>
-          </dd>
-        </div>
+        {receipt.txHashes.map((hash, idx) => (
+          <div key={hash} className="animate-enter flex min-h-[52px] items-center justify-between border-b border-line-soft last:border-0" style={{ "--i": 10 + idx } as React.CSSProperties}>
+            <dt className="text-sm text-muted">{receipt.txHashes.length > 1 ? `Transacción ${idx + 1}` : "Transacción"}</dt>
+            <dd className="flex items-center gap-1">
+              {explorerTx(hash)
+                ? <a href={explorerTx(hash)!} target="_blank" rel="noreferrer" className="font-mono text-[13px] font-medium text-celeste-ink hover:underline">{shortHash(hash)}</a>
+                : <span className="font-mono text-[13px] font-medium">{shortHash(hash)}</span>}
+              <button type="button" aria-label="Copiar hash" className="flex size-9 items-center justify-center rounded-[10px] text-muted"
+                onClick={() => navigator.clipboard?.writeText(hash).then(() => setCopied(hash))}>
+                {copied === hash ? <Icon name="check" size={16} /> : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+                )}
+              </button>
+            </dd>
+          </div>
+        ))}
       </dl>
       {!url && <Enter i={11} className="mt-3.5"><MockNotice /></Enter>}
 
