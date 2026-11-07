@@ -25,6 +25,26 @@ describe("payerSnapshot", () => {
     const { service } = createDemoBackend();
     await expect(payerSnapshot(service, "worker1")).rejects.toThrow("solo para clientes");
   });
+
+  it("does not ask to fund the unused amount of a canceled agreement", async () => {
+    const now = 1_800_000_000;
+    const { service } = createDemoBackend(() => now);
+    await service.cancel("0", "platform");
+    const text = await payerSnapshot(service, "platform", now);
+    const canceled = text.split("- Acuerdo #0")[1].split("- Acuerdo #1")[0];
+    expect(canceled).toContain("estado canceled");
+    expect(canceled).toContain("Falta fondear $0,00");
+    expect(text).toContain("Total pendiente de fondeo (excluye cancelados): $6.000,00");
+  });
+
+  it("keeps unfinished funding of completed agreements in the overall total", async () => {
+    let now = 1_800_000_000;
+    const { service } = createDemoBackend(() => now);
+    now += 3600;
+    const text = await payerSnapshot(service, "platform", now);
+    expect(text).toContain("En acuerdos vigentes: falta devengar $0,00 y falta fondear $0,00");
+    expect(text).toContain("Total pendiente de fondeo (excluye cancelados): $15.000,00");
+  });
 });
 
 describe("workerSnapshot", () => {
