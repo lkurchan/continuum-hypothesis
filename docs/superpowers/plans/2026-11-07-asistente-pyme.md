@@ -1,0 +1,11 @@
+# Plan — Asistente del cliente y migración a OpenAI (C y D)
+
+Spec: `docs/superpowers/specs/2026-11-07-asistente-pyme.md`. Es el P1 del pivot B2B: hay que mergearlo antes de las 14:45.
+
+1. [x] Crear la branch `feat/d-asistente-pyme` desde `main` y commitear la spec y el plan.
+2. [x] `toProposal()` y `payerSnapshot()` con sus tests. Commit.
+3. [x] Migrar `/api/agent/chat` a OpenAI (`openai` en lugar de `@anthropic-ai/sdk`, con `OPENAI_API_KEY` y `OPENAI_MODEL`), sumar `PAYER_SYSTEM` y el tool `proponer_acuerdo` solo para el cliente, y agregar la propuesta al stream después de `\u001e`. Commit.
+4. [x] UI: `useChat` compartido, `/payer/asistente`, `ProposalCard` y la pestaña en el header. Commit.
+5. [x] Reemplazar Claude por OpenAI en la documentación. Commit.
+6. [ ] Cargar `OPENAI_API_KEY` y `OPENAI_MODEL` en `.env.local` y en Vercel, y hacer la prueba manual en mock (criterios 3 y 4). Push y PR contra `main`.
+7. [ ] Cuando B mergee `funding.ts` y `fees.ts`: usar `fundingStatus` en el snapshot y mostrar la comisión en la tarjeta.
