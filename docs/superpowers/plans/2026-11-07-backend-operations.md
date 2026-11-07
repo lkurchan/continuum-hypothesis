@@ -7,3 +7,4 @@
 5. Ejecutar diagnóstico sobre la configuración disponible y completar la preparación remota autorizada cuando exista Supabase.
 6. Actualizar README y guía B6 con comandos, deployment confirmado y pendientes concretos.
 7. Validar, publicar PR y seguir CI hasta su resultado.
+8. Al recibir Supabase: validar tablas/RPC, aplicar wallets de forma idempotente, verificar lecturas HTTP reales y preparar el seed sin enviar fondos; registrar evidencia y bloqueos restantes.
