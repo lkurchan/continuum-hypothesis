@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:chain": "node scripts/test-chain.mjs",
     "test:watch": "vitest",
     "typecheck": "next typegen && tsc --noEmit"
   },
