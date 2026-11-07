@@ -11,6 +11,7 @@ import { usePayer } from "./PayerContext";
 const links = [
   { href: "/payer", label: "Panel" },
   { href: "/payer/nuevo", label: "Nuevo pago" },
+  { href: "/payer/asistente", label: "Asistente" },
 ];
 
 export function PayerHeader() {

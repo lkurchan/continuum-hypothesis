@@ -39,7 +39,7 @@ try {
     ensure(Date.now() < deadline, "El servidor no quedó disponible.");
     await delay(100);
   }
-  for (const path of ["/api/users", "/api/streams?userId=platform", "/api/activity?userId=worker1"]) {
+  for (const path of ["/api/users", "/api/streams?userId=platform", "/api/activity?userId=worker1", "/api/clients/platform/reputation"]) {
     ensure((await fetch(origin + path)).status === 401, `API anónima abierta: ${path}`);
   }
   for (const path of ["/api/streams", "/api/streams/0/topup", "/api/streams/0/withdraw", "/api/streams/0/cancel", "/api/agent/chat", "/api/lab/reset"]) {

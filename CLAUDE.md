@@ -12,7 +12,7 @@ Proyecto para HackaTwin (hackathon presencial, sábado 7/11/2026). La entrega ci
 
 **Tracks:** Stablecoins (Twin) como principal y Belo como secundario. Las bases están en `docs/*.pdf`. Belo cierra a las 17:30 y Twin a las 18:00. El freeze de features es a las 15:00.
 
-**Stack:** Arbitrum One, contrato propio en `contracts/` (Foundry + OpenZeppelin) y `web/` (Next.js App Router + viem + Supabase + Vercel AI SDK con Claude). Wallets custodiales con usuarios demo fijos y claves en variables de entorno. Deploy en Vercel.
+**Stack:** Arbitrum One, contrato propio en `contracts/` (Foundry + OpenZeppelin) y `web/` (Next.js App Router + viem + Supabase + SDK oficial de OpenAI para el asistente). Wallets custodiales con usuarios demo fijos y claves en variables de entorno. Deploy en Vercel.
 
 ## Requisitos duros del track Twin (para no quedar descalificados)
 
