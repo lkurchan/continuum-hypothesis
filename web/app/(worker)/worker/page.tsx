@@ -25,7 +25,14 @@ export default function ProviderHome() {
 
   const client = (s: StreamView) => nameOf(users, s.payerId);
   const stream = streams.find((s) => s.id === selected) ?? primaryStream(streams, now);
-  const late = streams.map((s) => ({ s, f: fundingView(s, now) })).filter(({ f }) => f.state === "atrasado");
+  // One alert per client, adding up what every late agreement owes.
+  const late = Object.values(streams.reduce<Record<string, { payerId: string; debt: number; count: number }>>((acc, s) => {
+    const f = fundingView(s, now);
+    if (f.state !== "atrasado") return acc;
+    const row = acc[s.payerId] ?? { payerId: s.payerId, debt: 0, count: 0 };
+    acc[s.payerId] = { ...row, debt: row.debt + f.debt, count: row.count + 1 };
+    return acc;
+  }, {}));
   const streaming = streams.some((s) => liveStatus(s, now) === "streaming");
   const visible = activity.filter((a) => !isFee(a));
 
@@ -40,10 +47,10 @@ export default function ProviderHome() {
         {streaming && <LiveChip />}
       </Enter>
 
-      {late.map(({ s, f }) => (
-        <div key={s.id} role="alert" className="animate-enter flex items-start gap-2.5 rounded-2xl bg-danger-soft px-4 py-3 text-sm leading-snug text-danger">
+      {late.map((l) => (
+        <div key={l.payerId} role="alert" className="animate-enter flex items-start gap-2.5 rounded-2xl bg-danger-soft px-4 py-3 text-sm leading-snug text-danger">
           <InfoIcon className="mt-0.5" />
-          <span><b className="font-semibold">{client(s)} está atrasado: te debe {money(f.debt)}.</b> Podés cobrar hasta lo fondeado.</span>
+          <span><b className="font-semibold">{nameOf(users, l.payerId)} está atrasado: te debe {money(l.debt)}{l.count > 1 ? ` en ${l.count} acuerdos` : ""}.</b> Podés cobrar hasta lo fondeado.</span>
         </div>
       ))}
 
