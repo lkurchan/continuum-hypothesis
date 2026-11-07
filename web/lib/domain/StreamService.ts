@@ -5,6 +5,7 @@ import { DomainError, requireCondition } from "./errors";
 import type { Activity, ActivityKind, Amount, DemoUser, StreamView } from "./types";
 import { feeFor } from "./fees";
 import { validatePeriod } from "./vesting";
+import { withDemoDestinations } from "./demo-destinations";
 
 const FEE_NOTE = "Comisión Continuum 0,05%";
 
@@ -25,7 +26,7 @@ export class StreamService {
   private async user(id: string): Promise<DemoUser> {
     const user = await this.repo.user(id);
     requireCondition(user, "Usuario inexistente.", 404);
-    return user;
+    return withDemoDestinations(user);
   }
   private async owned(id: string, userId: string, role: "payer" | "worker") {
     const user = await this.user(userId);
@@ -67,7 +68,7 @@ export class StreamService {
     return txHash;
   }
 
-  users() { return this.repo.users(); }
+  async users() { return (await this.repo.users()).map(withDemoDestinations); }
   async streams(userId: string): Promise<StreamView[]> {
     await this.user(userId);
     const records = await this.repo.streams(userId);

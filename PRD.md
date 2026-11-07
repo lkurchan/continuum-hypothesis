@@ -300,3 +300,7 @@ La reputación se consulta desde el contrato de la empresa que paga al usuario, 
 ### Perfiles ilustrativos y publicación
 
 Por pedido del usuario, Estudio Norte, Órbita Digital y Mercado Sur incluyen reputación y reseñas ficticias identificadas como perfil demo. No se atribuyen transacciones verificadas a estos perfiles, ni se reemplaza información de clientes reales. El usuario autoriza publicar la ampliación de pagos parciales y sus ajustes de UI mediante PR.
+
+### Destino Belo temporal de la demo
+
+Los retiros Belo de `worker1` y `worker2` usan temporalmente la dirección indicada por el usuario: `0x5d474d0744284a72afbc4032fd001de50ea72b7c`. El servicio aplica el mismo destino a la información de la UI y a la operación, sin modificar las wallets custodiales ni Supabase. La acreditación en Belo debe comprobarse con una operación autorizada por el usuario.
