@@ -52,7 +52,16 @@
 ### Codex 2 — docs
 - **13:40–14:30:** actualizar `PRD.md`, `CLAUDE.md`/`AGENTS.md` y `README.md` con el pivot. Problema y solución B2B, modelo de fee del 0,05% con la dirección de la tesorería y el link a una transacción de fee real cuando exista. Se mantiene el aviso de que ARGt no rinde.
 
+> **Prompts por persona:** `.plans/pivot-b2b/` (empezar por `00-README.md`). Si este plan y esos archivos difieren, mandan esos archivos.
+
 ## P1 — solo si P0 está mergeado a las 14:30
+
+**Orden:**
+1. **Reputación de pago pública** (`07-P1-reputacion.md`).
+2. Propuesta por link con tramo mínimo.
+3. Asistente IA.
+
+El escrow (depósito antes de entregar) va al pitch como roadmap.
 
 - **D (o quien termine primero) — Propuesta por link, unos 30 min:** pantalla "Proponer acuerdo" del lado del proveedor (servicio, monto, período y primer tramo) que genera un link `/payer/nuevo?provider=…&label=…&total=…&start=…&end=…&first=…`, con botón de copiar y QR. C hace que `/payer/nuevo` lea esos query params y precargue el formulario. No hay persistencia: el link es la propuesta.
 - **Asistente IA, unos 15 min:** actualizar `web/lib/agent/prompt.ts` y `context.ts` a B2B: al cliente le sugiere cuándo fondear según `fundingStatus` y al proveedor le explica su estado. Sin acciones nuevas.

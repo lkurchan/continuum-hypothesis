@@ -35,6 +35,13 @@
 5. **Atraso:** si lo devengado supera lo depositado, los dos ven el estado "Atrasado" con el monto adeudado. El contrato ya impide retirar más de lo depositado. El proveedor decide si sigue prestando el servicio.
 6. **Cancelación:** se mantiene el `cancel` del contrato tal como está (solo el pagador, inmediato: lo devengado queda para el proveedor y el resto vuelve al cliente). No se destaca en el pitch. Si el cliente deja de fondear, también es un corte de hecho.
 
+## 4.1 Cómo se reduce el riesgo de no cobrar
+
+1. **Fondeo por tramos** (ya en el contrato): el proveedor solo cobra lo fondeado y ve en todo momento cuánto tiene asegurado ("Cubierto hasta").
+2. **Tramo mínimo para arrancar** (P1, solo UI): el proveedor puede exigir que el primer tramo cubra N días antes de empezar a prestar el servicio.
+3. **Reputación de pago pública** (P1 #1): cada acuerdo queda onchain (aceptación, cada tramo, si se completó). Con eso se arma un historial por empresa cliente, del tipo "fondea en promedio 2 días antes" o "deja acuerdos sin fondear", que el proveedor consulta antes de aceptar. A la empresa le conviene cuidarla. Hoy no existe, y solo es posible porque los pagos son públicos y verificables. Detalle en `.plans/pivot-b2b/07-P1-reputacion.md`.
+4. **Roadmap, no entra hoy:** depósito completo antes de entregar, con liberación contra confirmación de entrega (escrow). Traslada el riesgo a la empresa y requiere cambiar el contrato. Es la evolución natural para extender el producto a mercadería.
+
 ## 5. Estado de fondeo (lógica de dominio pura, en el módulo B)
 
 Va en `web/lib/domain/funding.ts`, con tests:
@@ -100,8 +107,9 @@ Un asistente que sigue siendo copiloto:
 1. **Problema:** las PyMEs que prestan servicios cobran a 30, 60 o 90 días y se financian caro; los clientes pagan más caro por pagar a plazo.
 2. **Solución:** pago continuo en pesos onchain (ARGt). Precio punto medio, fijo en la blockchain, fondeado por tramos y cobrable al segundo.
 3. **Por qué onchain y en moneda local:** dinero programable que se libera solo, 24/7, sin conciliación ni bancos, y en pesos: sin pasar por el dólar.
-4. **Negocio:** 0,05% por depósito, visible en el explorer durante la demo.
-5. **Extensión:** la misma primitiva sirve para sueldos y freelancers.
+4. **Confianza:** reputación de pago pública y verificable. Algo que solo es posible onchain.
+5. **Negocio:** 0,05% por depósito, visible en el explorer durante la demo.
+6. **Extensión:** la misma primitiva sirve para sueldos y freelancers, y con escrow, para mercadería.
 
 ## 8. Fuera de alcance
 
