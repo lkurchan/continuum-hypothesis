@@ -2,6 +2,10 @@
 
 Proyecto desplegado en [continuum-hypothesis.vercel.app](https://continuum-hypothesis.vercel.app), con acceso mediante Vercel Authentication. Se reutilizan la base, el contrato y las wallets existentes; no crear otro proyecto Supabase ni volver a ejecutar migraciones sobre las tablas actuales.
 
+## Migración al login de la app
+
+El backend del acceso propio está definido en [DEMO-LOGIN.md](DEMO-LOGIN.md). Antes de desplegarlo en modo real, configurar `DEMO_AUTH_PASSWORD_HASH` y `DEMO_AUTH_SECRET` como secretos de Production y coordinar la pantalla `/login` con Gio. Sin configuración, el nuevo backend bloquea los datos y pagos con 503. Mantener **All Deployments** hasta integrar/probar la pantalla. Después se puede usar **Standard Protection**, manteniendo protegidos los previews y los deployments históricos sin este guard. El procedimiento y los endpoints están en la guía de login. La evidencia siguiente corresponde al despliegue anterior al login.
+
 ## Estado verificado el 7/11/2026, 12:41 ART
 
 - Proyecto `continuum-hypothesis`, equipo `lkurchans-projects`, conectado al repositorio GitHub.
@@ -48,7 +52,7 @@ Configurar las variables reales **solo en Production**. Mantener `CHAIN_MODE=moc
 
 Guardar `NEXT_PUBLIC_SUPABASE_URL` como **Config**: Vercel rechaza variables con prefijo público marcadas como Secret. Guardar las claves y el RPC como **Secret**. Las nueve variables de la tabla están configuradas en Production; la URL pública es Config y las otras ocho son Secret. Si una importación falla parcialmente, revisar la lista antes de repetirla: algunas variables pueden haberse guardado.
 
-La clave pública `NEXT_PUBLIC_SUPABASE_ANON_KEY` no es necesaria para estas rutas. `DEPLOYER_PK` y `ARBISCAN_API_KEY` son para contratos, no para el deploy web. `ANTHROPIC_API_KEY` queda para la integración del agente. Ninguna clave privada ni la clave de servidor de Supabase lleva prefijo `NEXT_PUBLIC_`.
+La clave pública `NEXT_PUBLIC_SUPABASE_ANON_KEY` no es necesaria para estas rutas. `DEPLOYER_PK` y `ARBISCAN_API_KEY` son para contratos, no para el deploy web. `OPENAI_API_KEY` y `OPENAI_MODEL` habilitan el asistente. Ninguna clave privada ni la clave de servidor de Supabase lleva prefijo `NEXT_PUBLIC_`.
 
 Mantener **Fluid compute** habilitado y duración de Functions de **300 segundos**. Las operaciones pueden esperar aprobación ERC-20 y receipt antes de responder. Con Fluid, 300 segundos es el valor predeterminado documentado para todos los planes; revisar que el proyecto no lo haya reducido. Ver [duración de Functions](https://vercel.com/docs/functions/configuring-functions/duration).
 

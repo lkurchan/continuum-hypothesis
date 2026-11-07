@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/kit";
 import { Enter, Page } from "@/components/ui/motion";
 import { useWorker } from "@/components/worker/WorkerContext";
-
-type Message = { role: "user" | "assistant"; content: string };
+import { Bubble, Typing, useChat } from "@/components/ui/chat";
 
 const suggestions = [
   "¿Cuánto puedo cobrar hoy?",
@@ -15,47 +14,13 @@ const suggestions = [
 
 export default function CopilotPage() {
   const { user } = useWorker();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, busy, send: ask } = useChat(user?.id);
   const [draft, setDraft] = useState("");
-  const [busy, setBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages]);
 
-  const send = async (text: string) => {
-    const content = text.trim();
-    if (!content || busy || !user) return;
-    const history: Message[] = [...messages, { role: "user", content }];
-    setMessages([...history, { role: "assistant", content: "" }]);
-    setDraft("");
-    setBusy(true);
-    const write = (reply: string) => setMessages([...history, { role: "assistant", content: reply }]);
-    try {
-      const response = await fetch("/api/agent/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, messages: history.filter((m) => m.content) }),
-      });
-      if (!response.ok || !response.body) {
-        const data = await response.json().catch(() => ({}));
-        write((data as { error?: string }).error ?? "No pude responder ahora.");
-        return;
-      }
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let reply = "";
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        reply += decoder.decode(value, { stream: true });
-        write(reply);
-      }
-    } catch {
-      write("No pude conectarme. Probá de nuevo.");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const send = (text: string) => { if (!busy) setDraft(""); void ask(text); };
 
   return (
     <Page>
@@ -96,27 +61,5 @@ export default function CopilotPage() {
       </form>
     </div>
     </Page>
-  );
-}
-
-function Bubble({ role, children, i = 0 }: { role: Message["role"]; children: React.ReactNode; i?: number }) {
-  if (role === "user") {
-    return <p className="animate-enter ml-10 origin-bottom-right self-end whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-ink px-3.5 py-2.5 text-sm leading-normal text-white">{children}</p>;
-  }
-  return (
-    <div className="animate-enter mr-6 flex items-start gap-2.5" style={{ "--i": i } as React.CSSProperties}>
-      <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-[9px] bg-ink">
-        <svg width="16" height="16" viewBox="0 0 28 28"><path d="M6 14h9.5" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" /><circle cx="20" cy="14" r="3" fill="#6CB4EE" /></svg>
-      </span>
-      <div className="tnum whitespace-pre-wrap rounded-[4px_18px_18px_18px] bg-surface px-3.5 py-2.5 text-sm leading-normal text-[#1F1F23]">{children}</div>
-    </div>
-  );
-}
-
-function Typing() {
-  return (
-    <span className="inline-flex gap-1 py-1" aria-label="Escribiendo">
-      {[0, 1, 2].map((i) => <span key={i} className="size-1.5 rounded-full bg-subtle animate-typing" style={{ animationDelay: `${i * 160}ms` }} />)}
-    </span>
   );
 }
