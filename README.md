@@ -4,4 +4,46 @@ Pagos por segundo para freelancers y trabajadores de plataformas, en pesos oncha
 
 Ver [PRD.md](PRD.md) para alcance, arquitectura e interfaces, y [docs/SETUP.md](docs/SETUP.md) para instalar la base y preparar Supabase y Vercel.
 
-Estado: contrato y backend integrados y probados en Anvil local; backend demo funcional con `CHAIN_MODE=mock`. Ver [docs/BACKEND.md](docs/BACKEND.md), [CI](docs/CI.md) e [informe de revisión A+B](docs/reviews/2026-11-07-ab.md). Las UIs siguen en sus módulos. El modo real requiere el despliegue del contrato y la configuración de servicios. ARGt es un medio de pago, sin rendimiento.
+Contrato desplegado en Arbitrum One y backend funcional en modo mock. El código desplegado se contrastó con el bytecode del repositorio; el flujo con ARGt pasó en un fork local. El primer flujo del producto con transferencias reales (B6), Supabase y el deploy web siguen pendientes. ARGt es un medio de pago, **sin rendimiento**.
+
+## Chain, token y contrato
+
+| Recurso | Dirección / evidencia |
+|---|---|
+| Red | Arbitrum One, chainId `42161` |
+| ARGt (18 decimales) | [`0x59863989d080B22476DB95656d0C3CC18be92214`](https://arbiscan.io/token/0x59863989d080B22476DB95656d0C3CC18be92214) |
+| ContinuumStreams | [`0xB98D30CC1e8D234A6234569848366fE30F3fF799`](https://arbiscan.io/address/0xB98D30CC1e8D234A6234569848366fE30F3fF799#code) |
+| Deploy, bloque 522100998 | [`0x9bea…bc6b`](https://arbiscan.io/tx/0x9bea2cb4b05d7be7d3fc3d53db78126c005eb03e40eb1fadf10b46d63c37bc6b) |
+| Primer pago/retiro real de ARGt | Pendiente B6; el deploy no sustituye esta evidencia |
+
+## Correr la demo
+
+```bash
+nvm use
+npm ci --prefix web
+cp web/.env.example web/.env.local # solo si todavía no existe
+CHAIN_MODE=mock npm run dev --prefix web
+```
+
+El backend mock incluye tres usuarios y dos streams en memoria; no necesita claves ni servicios. Las pantallas `/payer` y `/worker` siguen en desarrollo. Los hashes `mock:` representan simulaciones y no tienen enlace a Arbiscan. Reiniciar el proceso restaura el seed.
+
+Para preparar el modo real, ver [OPERATIONS.md](docs/OPERATIONS.md): diagnóstico de solo lectura, configuración de wallets demo y seed por API que registra blockchain e historial. No subir `.env.local`, `.env` ni claves al repositorio.
+
+## Arquitectura y verificación
+
+Next.js expone rutas HTTP que usan `StreamService`, un repositorio Supabase y un `StreamGateway`. La implementación real firma con viem en el servidor; la mock permite una demo local. Solidity controla permisos, vesting lineal, fondeo, retiros y cancelaciones. Los montos se transmiten como strings de hasta 18 decimales.
+
+```bash
+npm test --prefix web
+npm run lint --prefix web
+npm run typecheck --prefix web
+npm run build --prefix web
+npm run test:api --prefix web
+bash contracts/script/install-deps.sh
+forge test --root contracts --no-match-path 'test/*.fork.t.sol'
+npm run test:chain --prefix web
+```
+
+El [CI](docs/CI.md) comprueba backend/build, HTTP mock, contratos/ABI, Anvil y PostgreSQL. Ver [integración de API](docs/BACKEND.md) e [informe de revisión A+B](docs/reviews/2026-11-07-ab.md).
+
+El historial del evento registra scaffold, contrato, gateways, dominio, API, migraciones, tests, revisión y herramientas operativas en commits separados. El selector de usuario y las wallets custodiales son de demo: no hay autenticación de producción, exclusión distribuida ni reconciliación automática entre chain y SQL. Si una operación se confirma y falla el historial, conservar el hash y reconciliarlo antes de repetir.

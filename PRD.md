@@ -210,7 +210,7 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 
 ### Módulo A — Contrato (`contracts/`)
 - [x] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
-- [ ] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
+- [x] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
 - [ ] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**. Publicar la dirección en el canal del equipo.
 - [x] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
 - [ ] A5. Después: ayudar a B con la integración y sembrar los streams para la demo.
@@ -223,7 +223,7 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 - [x] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
 - [ ] B6. Prueba de punta a punta en mainnet: el **primer hash real**, que se guarda para el README.
 
-B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. La migración remota y B6 siguen pendientes de Supabase, contrato desplegado, credenciales y fondos. Ver `docs/BACKEND.md` y `docs/CI.md`.
+B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. El contrato está desplegado y se verificó su bytecode. La migración remota y B6 siguen pendientes de Supabase y fondeo de ARGt; las claves y gas de las wallets demo se comprobaron localmente. Ver `docs/OPERATIONS.md`. Ver `docs/BACKEND.md` y `docs/CI.md`.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
 - [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
@@ -241,8 +241,8 @@ B1–B5 están implementados y probados con demo local, proveedores simulados y 
 
 ### Codex 1 y 2
 - [ ] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.
-- [ ] Script de seed de streams demo y modo mock con datos lindos.
-- [ ] Review de los PRs de A y B (seguridad del contrato y manejo de claves).
+- [x] Script de seed de streams demo y modo mock con datos lindos. El seed real por API está listo; su ejecución espera Supabase y ARGt.
+- [x] Review de los PRs de A y B (seguridad del contrato y manejo de claves).
 - [ ] Configuración de Vercel y verificación del deploy.
 
 ## 10. Cronograma
