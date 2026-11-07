@@ -9,3 +9,5 @@ Spec: `docs/superpowers/specs/2026-11-07-asistente-pyme.md`. Es el P1 del pivot 
 5. [x] Reemplazar Claude por OpenAI en la documentación. Commit.
 6. [ ] Cargar `OPENAI_API_KEY` y `OPENAI_MODEL` en `.env.local` y en Vercel, y hacer la prueba manual en mock (criterios 3 y 4). Push y PR contra `main`.
 7. [ ] Cuando B mergee `funding.ts` y `fees.ts`: usar `fundingStatus` en el snapshot y mostrar la comisión en la tarjeta.
+8. [x] Revisar la integración con auth, completar el guard de reputación y el destino del login, y cubrir streaming y propuestas sin ejecutar pagos. No modificar componentes ni páginas.
+9. [ ] Validar checks, mergear y verificar el despliegue. La prueba del chat real requiere las variables de OpenAI, las dos variables de auth y la pantalla de login a cargo de Gio.

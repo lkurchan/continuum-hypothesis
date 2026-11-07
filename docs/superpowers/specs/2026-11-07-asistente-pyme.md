@@ -71,3 +71,9 @@ Si OpenAI falla en vivo, el mismo acuerdo se crea desde `/payer/nuevo` y la cobe
 2. Tests: `payerSnapshot` (ids de proveedores, "cubierto hasta", "ATRASADO" y rechazo de un proveedor), `toProposal` (mapeo, `floor` y rechazos) y la ruta (503 para el cliente sin key y 404 para un usuario inexistente).
 3. Con `CHAIN_MODE=mock` y la key cargada, como cliente: preguntar la cobertura, pedir el acuerdo de la sugerencia, confirmar la tarjeta y verlo en el Panel.
 4. El copiloto del proveedor sigue respondiendo, ahora con OpenAI.
+
+## Revisión de integración con el login
+
+El chat mantiene la sesión de operador y el control de origen antes de acceder al backend o a OpenAI. La ruta de reputación integrada en paralelo también valida la sesión dentro de su handler. El login admite `/payer/asistente` como destino interno.
+
+Las pruebas de streaming usan un proveedor simulado: texto para ambos roles, argumentos de herramienta fragmentados, propuesta válida sin movimientos de fondos, precio inventado y errores del proveedor sin filtrar detalles. Si el modelo escribió texto pero la propuesta necesita un precio, se agrega siempre la pregunta de aclaración; no se oculta por haber enviado texto previamente.

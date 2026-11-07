@@ -14,6 +14,7 @@ import { POST as withdraw } from "../streams/[id]/withdraw/route";
 import { POST as cancel } from "../streams/[id]/cancel/route";
 import { POST as chat } from "../agent/chat/route";
 import { POST as reset } from "../lab/reset/route";
+import { GET as reputation } from "../clients/[id]/reputation/route";
 
 const password = "a-local-auth-test-password-12345";
 const salt = Buffer.alloc(32, 2);
@@ -33,7 +34,7 @@ it("guards every data/payment handler even if Proxy is bypassed", async () => {
   const request = new Request("https://demo.example/api/streams");
   const context = { params: Promise.resolve({ id: "1" }) };
   for (const handler of [users, streams, create, activity, chat, reset]) expect((await handler(request)).status).toBe(401);
-  for (const handler of [topup, withdraw, cancel]) expect((await handler(request, context)).status).toBe(401);
+  for (const handler of [topup, withdraw, cancel, reputation]) expect((await handler(request, context)).status).toBe(401);
   expect(backend).not.toHaveBeenCalled();
 });
 it("logs in, recognizes the cookie and clears it at logout", async () => {

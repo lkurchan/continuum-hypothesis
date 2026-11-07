@@ -78,7 +78,7 @@ async function handlePOST(request: Request) {
           write(PROPOSAL_SEPARATOR + JSON.stringify(proposal));
         } catch (error) {
           const reason = error instanceof SyntaxError ? "la respuesta vino incompleta." : (error as Error).message;
-          if (!wrote || !reason.endsWith("?")) write(`${wrote ? "\n\n" : ""}${reason.endsWith("?") ? reason : `No pude armar la propuesta: ${reason} Probá reformular el pedido.`}`);
+          write(`${wrote ? "\n\n" : ""}${reason.endsWith("?") ? reason : `No pude armar la propuesta: ${reason} Probá reformular el pedido.`}`);
         }
       } catch (error) {
         const busy = error instanceof OpenAI.RateLimitError || (error instanceof OpenAI.APIError && (error.status ?? 0) >= 500);
