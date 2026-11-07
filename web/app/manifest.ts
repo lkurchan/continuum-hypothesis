@@ -5,10 +5,9 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Continuum",
     short_name: "Continuum",
-    description: "Cobrá lo que trabajás, segundo a segundo.",
-    start_url: "/worker",
+    description: "Pagos continuos entre empresas por servicios.",
+    start_url: "/",
     display: "standalone",
-    orientation: "portrait",
     background_color: "#FFFFFF",
     theme_color: "#0B0B0C",
     lang: "es-AR",

@@ -43,7 +43,7 @@ export default function ActivityPage() {
 
   return (
     <Page>
-    <div className="flex flex-col gap-[18px] pb-6">
+    <div className="mx-auto flex w-full max-w-[760px] flex-col gap-[18px] rounded-3xl border border-line bg-white p-6">
       <Enter as="header" className="flex h-11 items-center justify-between">
         <h1 className="text-[28px] font-semibold tracking-[-0.035em]">Actividad</h1>
         <span className="text-[13px] text-muted">Arbitrum One</span>

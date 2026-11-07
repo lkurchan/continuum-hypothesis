@@ -159,17 +159,14 @@ input[type="number"]::-webkit-outer-spin-button {
 ::view-transition-new(.tab) {
   animation: 320ms var(--ease-out-expo) 60ms both vt-fade, 420ms var(--ease-out-expo) 60ms both vt-rise;
 }
-::view-transition-group(worker-nav),
-::view-transition-group(payer-header) {
+::view-transition-group(app-header) {
   animation: none;
   z-index: 100;
 }
-::view-transition-old(worker-nav),
-::view-transition-old(payer-header) {
+::view-transition-old(app-header) {
   display: none;
 }
-::view-transition-new(worker-nav),
-::view-transition-new(payer-header) {
+::view-transition-new(app-header) {
   animation: none;
 }
 @keyframes vt-fade {

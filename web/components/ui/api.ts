@@ -17,10 +17,10 @@ export const api = {
   users: () => call<DemoUser[]>("/api/users"),
   streams: (userId: string) => call<StreamView[]>(`/api/streams?userId=${encodeURIComponent(userId)}`),
   activity: (userId: string) => call<Activity[]>(`/api/activity?userId=${encodeURIComponent(userId)}`),
-  create: (payerId: string, items: { workerId: string; totalAmount: Amount; initialDeposit: Amount }[], start: number, end: number) =>
-    post<{ txHash: string; streamIds: string[] }>("/api/streams", { payerId, items, start, end }),
+  create: (payerId: string, items: { workerId: string; totalAmount: Amount; initialDeposit: Amount; label?: string }[], start: number, end: number) =>
+    post<{ txHash: string; streamIds: string[]; feeTxHash?: string }>("/api/streams", { payerId, items, start, end }),
   topUp: (userId: string, id: string, amount: Amount) =>
-    post<{ txHash: string }>(`/api/streams/${id}/topup`, { userId, amount }),
+    post<{ txHash: string; feeTxHash?: string }>(`/api/streams/${id}/topup`, { userId, amount }),
   withdraw: (userId: string, id: string, amount: Amount, destination: "wallet" | "belo") =>
     post<{ txHash: string }>(`/api/streams/${id}/withdraw`, { userId, amount, destination }),
   cancel: (userId: string, id: string) =>

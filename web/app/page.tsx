@@ -25,16 +25,17 @@ export default function EntryPage() {
   const ordered = users ? [...users].sort((a, b) => (a.role === b.role ? 0 : a.role === "worker" ? -1 : 1)) : [];
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-7">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[1100px] flex-col px-6 pb-10 pt-7">
       <header className="animate-enter flex items-center justify-between">
         <Logo />
         <NetworkChip />
       </header>
 
-      <section className="flex grow flex-col justify-center gap-7 py-10">
+      <div className="grid grow items-center gap-12 py-12 lg:grid-cols-[1.15fr_1fr]">
+      <section className="flex flex-col gap-7">
         <Enter i={1}>
-          <h1 className="text-[44px] font-medium leading-[1.02] tracking-[-0.045em]">
-            Cobrá lo que trabajás, segundo a segundo.
+          <h1 className="text-[clamp(40px,5vw,60px)] font-medium leading-[1.02] tracking-[-0.045em]">
+            Tus servicios se cobran segundo a segundo.
           </h1>
         </Enter>
         <div aria-hidden="true" className="animate-enter relative flex h-3 items-center" style={{ "--i": 3 } as React.CSSProperties}>
@@ -44,7 +45,7 @@ export default function EntryPage() {
           </div>
         </div>
         <Enter i={4} as="p" className="text-base leading-normal text-muted">
-          Pesos onchain (ARGt) que se liberan en tiempo real. Retirás lo que ya ganaste, cuando quieras.
+          Acuerdos de servicio entre empresas, pagados de forma continua en pesos onchain (ARGt). El cliente paga menos que a 60 días y fondea por tramos; la PyME cobra lo devengado cuando quiere. El precio queda fijo en la blockchain.
         </Enter>
       </section>
 
@@ -62,7 +63,7 @@ export default function EntryPage() {
                 : <Avatar name={u.name} tone={i === 0 ? "celeste" : "neutral"} />}
               <span className="flex grow flex-col gap-0.5">
                 <span className="text-base font-medium">{u.name}</span>
-                <span className="text-[13px] text-muted">{u.role === "payer" ? "Pagador" : "Trabajador"}</span>
+                <span className="text-[13px] text-muted">{u.role === "payer" ? "Cliente · contrata y fondea servicios" : "Proveedor · cobra sus servicios"}</span>
               </span>
               <Icon name="chevron" className="text-faint transition-transform duration-500 ease-spring group-hover:translate-x-0.5" />
             </button>
@@ -70,6 +71,7 @@ export default function EntryPage() {
         </div>
         <p className="mt-2 text-center text-xs text-subtle">ARGt es un medio de pago, sin rendimiento.</p>
       </nav>
+      </div>
     </main>
   );
 }

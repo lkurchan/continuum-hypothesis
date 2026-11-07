@@ -64,7 +64,7 @@ export default function WithdrawPage() {
 
   return (
     <Page>
-    <div className="flex grow flex-col pb-[max(28px,env(safe-area-inset-bottom))]">
+    <div className="mx-auto flex min-h-[640px] w-full max-w-[520px] flex-col rounded-3xl border border-line bg-white p-8 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-12px_rgb(0_0_0/0.08)]">
       <header className="grid h-11 grid-cols-[44px_1fr_44px] items-center">
         <Link href="/worker" transitionTypes={["nav-back"]} aria-label="Volver al inicio" className="flex size-11 items-center justify-center rounded-full border border-line transition-transform duration-500 ease-spring active:scale-90">
           <Icon name="back" />
@@ -137,7 +137,7 @@ function Confirmed({ receipt, beloAddress, address, remaining, flowing }: {
   ];
 
   return (
-    <div className="flex grow flex-col pb-[max(28px,env(safe-area-inset-bottom))]">
+    <div className="mx-auto flex min-h-[640px] w-full max-w-[520px] flex-col rounded-3xl border border-line bg-white p-8 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-12px_rgb(0_0_0/0.08)]">
       <header className="flex h-11 justify-end">
         <Link href="/worker" transitionTypes={["nav-back"]} aria-label="Cerrar" className="flex size-11 items-center justify-center rounded-full border border-line transition-transform duration-500 ease-spring active:scale-90"><Icon name="close" /></Link>
       </header>

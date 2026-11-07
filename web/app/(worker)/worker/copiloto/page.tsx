@@ -59,7 +59,7 @@ export default function CopilotPage() {
 
   return (
     <Page>
-    <div className="flex min-h-0 grow flex-col">
+    <div className="mx-auto flex min-h-[calc(100dvh-160px)] w-full max-w-[760px] grow flex-col rounded-3xl border border-line bg-white px-6 pt-6">
       <header className="flex h-11 shrink-0 items-center gap-2.5">
         <Enter><h1 className="text-[28px] font-semibold tracking-[-0.035em]">Copiloto</h1></Enter>
         <span className="rounded-md border border-line px-[7px] py-[3px] text-[11px] font-semibold tracking-[0.04em] text-ink-2">BETA</span>
@@ -85,7 +85,7 @@ export default function CopilotPage() {
       </div>
 
       <form onSubmit={(e) => { e.preventDefault(); void send(draft); }}
-        className="sticky bottom-[84px] mb-3 flex h-[52px] shrink-0 items-center gap-2 rounded-2xl border border-line bg-white pl-4 pr-1.5 focus-within:border-ink">
+        className="sticky bottom-4 mb-6 flex h-[52px] shrink-0 items-center gap-2 rounded-2xl border border-line bg-white pl-4 pr-1.5 focus-within:border-ink">
         <label htmlFor="ask" className="sr-only">Preguntale algo al copiloto</label>
         <input id="ask" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Preguntá sobre tu plata…"
           autoComplete="off" maxLength={1000} className="min-w-0 grow bg-transparent text-[15px] outline-none placeholder:text-subtle" />
