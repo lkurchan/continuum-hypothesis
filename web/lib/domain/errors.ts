@@ -1,0 +1,10 @@
+export class DomainError extends Error {
+  constructor(message: string, public readonly status = 400) {
+    super(message);
+    this.name = "DomainError";
+  }
+}
+
+export function requireCondition(condition: unknown, message: string, status = 400): asserts condition {
+  if (!condition) throw new DomainError(message, status);
+}

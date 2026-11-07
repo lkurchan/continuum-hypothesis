@@ -1,0 +1,66 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { expect, it, onTestFinished, vi } from "vitest";
+vi.mock("server-only", () => ({}));
+import { createPublicClient, createTestClient, createWalletClient, formatUnits, http, parseUnits, type Abi, type Hex } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { arbitrum } from "viem/chains";
+import { vestedAt } from "@/lib/domain/vesting";
+import type { DemoUser } from "@/lib/domain/types";
+import { ARGT_ADDRESS } from "./constants";
+import { createViemIO, ViemStreamGateway } from "./ViemStreamGateway";
+
+const rpc = process.env.LOCAL_CHAIN_RPC_URL;
+type Artifact = { abi: Abi; bytecode: { object: Hex }; deployedBytecode: { object: Hex } };
+
+it.runIf(Boolean(rpc))("integrates signed gateway operations with module A on local Anvil", async () => {
+  const url = new URL(rpc!);
+  if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) throw new Error("Integration tests require a loopback RPC.");
+  const directory = process.env.CONTINUUM_TEST_ARTIFACTS ?? resolve(process.cwd(), "../contracts/out");
+  const artifact = (name: string): Artifact => JSON.parse(readFileSync(resolve(directory, `${name}.sol/${name}.json`), "utf8"));
+  const token = artifact("MockERC20");
+  const contract = artifact("ContinuumStreams");
+  const test = createTestClient({ chain: arbitrum, mode: "anvil", transport: http(rpc) });
+  const client = createPublicClient({ chain: arbitrum, transport: http(rpc), pollingInterval: 20 });
+  expect(await client.getChainId()).toBe(42161);
+  const snapshot = await test.snapshot();
+  onTestFinished(async () => { await test.revert({ id: snapshot }); });
+  const payerKey = generatePrivateKey();
+  const workerKey = generatePrivateKey();
+  const account = privateKeyToAccount(payerKey);
+  const workerAccount = privateKeyToAccount(workerKey);
+  const payer: DemoUser = { id: "platform", name: "Local payer", role: "payer", address: account.address };
+  const worker: DemoUser = { id: "worker1", name: "Local worker", role: "worker", address: workerAccount.address };
+  const wallet = createWalletClient({ account, chain: arbitrum, transport: http(rpc) });
+  await test.setBalance({ address: payer.address, value: 10n ** 20n });
+  await test.setBalance({ address: worker.address, value: 10n ** 20n });
+  // Put the mock token at ARGt's configured address only on this disposable node.
+  await test.setCode({ address: ARGT_ADDRESS, bytecode: token.deployedBytecode.object });
+  const deployed = await client.waitForTransactionReceipt({ hash: await wallet.deployContract({ abi: contract.abi, bytecode: contract.bytecode.object }) });
+  if (!deployed.contractAddress) throw new Error("Contract deployment failed");
+  await client.waitForTransactionReceipt({ hash: await wallet.writeContract({ address: ARGT_ADDRESS, abi: token.abi, functionName: "mint", args: [payer.address, parseUnits("1000", 18)] }) });
+  const gateway = new ViemStreamGateway({ contract: deployed.contractAddress, token: ARGT_ADDRESS, abi: contract.abi,
+    io: createViemIO(rpc!, user => user.id === payer.id ? payerKey : workerKey) });
+  const block = await client.getBlock();
+  const start = Number(block.timestamp) - 100;
+  const end = start + 200;
+  const { streamIds, txHash } = await gateway.createStreams(payer, [{ worker, totalAmount: "100", initialDeposit: "80" }], start, end);
+  expect(txHash).toMatch(/^0x[0-9a-f]{64}$/);
+  expect(streamIds).toEqual(["1"]);
+  const id = streamIds[0];
+  expect((await gateway.getStream(id)).deposited).toBe("80");
+  await gateway.topUp(payer, id, "10");
+  await gateway.withdrawTo(worker, id, worker.address, "20");
+  const canceled = await gateway.cancel(payer, id);
+  expect(parseUnits(canceled.refunded, 18) + parseUnits(canceled.kept, 18)).toBe(parseUnits("90", 18));
+  const remaining = formatUnits(parseUnits(canceled.kept, 18) - parseUnits("20", 18), 18);
+  await gateway.withdrawTo(worker, id, worker.address, remaining);
+  const view = await gateway.getStream(id);
+  expect(view.status).toBe("canceled");
+  expect(view.withdrawn).toBe(canceled.kept);
+  expect(await gateway.balanceOf(worker.address)).toBe(canceled.kept);
+  const onchainVested = await client.readContract({ address: deployed.contractAddress, abi: contract.abi, functionName: "vestedAmount", args: [1n] });
+  expect(parseUnits(vestedAt(view, Number(block.timestamp)), 18)).toBe(onchainVested);
+  await expect(gateway.getStream("999")).rejects.toMatchObject({ status: 404 });
+  await expect(gateway.topUp(payer, id, "1")).rejects.toThrow("cancelado");
+}, 60_000);

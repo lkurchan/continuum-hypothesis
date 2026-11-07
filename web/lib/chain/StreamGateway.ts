@@ -1,4 +1,5 @@
 import type { Amount, DemoUser, StreamView } from "@/lib/domain/types";
+import { getBackend } from "@/lib/db/runtime";
 
 export interface StreamGateway {
   createStreams(payer: DemoUser, items: { worker: DemoUser; totalAmount: Amount; initialDeposit: Amount }[], start: number, end: number): Promise<{ txHash: string; streamIds: string[] }>;
@@ -10,8 +11,5 @@ export interface StreamGateway {
 }
 
 export function getGateway(): StreamGateway {
-  const mode = process.env.CHAIN_MODE ?? "mock";
-  if (mode === "mock") throw new Error("TODO B2");
-  if (mode === "real") throw new Error("TODO B5");
-  throw new Error("Invalid CHAIN_MODE: expected mock or real");
+  return getBackend().gateway;
 }

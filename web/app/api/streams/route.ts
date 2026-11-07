@@ -1,12 +1,22 @@
-// GET /api/streams?userId=<id>
-// Body: none. Success response: StreamView[] for the payer or worker.
-export async function GET() {
-  return Response.json({ error: "not implemented" }, { status: 501 });
+import { normalizeAmount } from "@/lib/domain/amounts";
+import { requireCondition } from "@/lib/domain/errors";
+import { body, object, respond, textField, userId } from "@/lib/domain/http";
+
+export async function GET(request: Request) {
+  return respond(({ service }) => service.streams(userId(request)));
 }
 
-// POST /api/streams
-// Body: { payerId, items: [{ workerId, totalAmount, initialDeposit }], start, end }.
-// Demo identity: userId in body or query. Success response: { txHash, streamIds }.
-export async function POST() {
-  return Response.json({ error: "not implemented" }, { status: 501 });
+// Body and response follow PRD 8.3; payerId also supplies the demo identity.
+export async function POST(request: Request) {
+  return respond(async ({ service }) => {
+    const payload = await body(request);
+    const payerId = textField(payload.payerId, "payerId");
+    requireCondition(Array.isArray(payload.items) && payload.items.length > 0 && payload.items.length <= 100, "Se requieren entre 1 y 100 items.");
+    requireCondition(typeof payload.start === "number" && typeof payload.end === "number", "start y end deben ser segundos Unix.");
+    const items = payload.items.map(value => {
+      const item = object(value);
+      return { workerId: textField(item.workerId, "workerId"), totalAmount: normalizeAmount(item.totalAmount), initialDeposit: normalizeAmount(item.initialDeposit) };
+    });
+    return service.create({ payerId, items, start: payload.start, end: payload.end }, userId(request, payload, payerId));
+  }, 201);
 }

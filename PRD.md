@@ -209,19 +209,21 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 - [ ] Generar las wallets demo y cargar las claves en Vercel.
 
 ### Módulo A — Contrato (`contracts/`)
-- [ ] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
+- [x] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
 - [ ] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
 - [ ] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**. Publicar la dirección en el canal del equipo.
-- [ ] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
+- [x] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
 - [ ] A5. Después: ayudar a B con la integración y sembrar los streams para la demo.
 
 ### Módulo B — Backend y chain (`web/lib/domain`, `web/lib/chain`, `web/lib/db`, `web/app/api/**`, `supabase/`)
-- [ ] B1. `vesting.ts` con tests, espejo de la fórmula del contrato.
-- [ ] B2. `MockStreamGateway` funcionando **primero**, para que C y D integren de entrada.
-- [ ] B3. Migraciones de Supabase y seed de usuarios demo.
-- [ ] B4. Rutas de la API contra el gateway y la base, con tests de la lógica de cada ruta.
-- [ ] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
+- [x] B1. `vesting.ts` con tests, espejo de la fórmula del contrato.
+- [x] B2. `MockStreamGateway` funcionando **primero**, para que C y D integren de entrada.
+- [x] B3. Migraciones de Supabase y seed de usuarios demo.
+- [x] B4. Rutas de la API contra el gateway y la base, con tests de la lógica de cada ruta.
+- [x] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
 - [ ] B6. Prueba de punta a punta en mainnet: el **primer hash real**, que se guarda para el README.
+
+B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. La migración remota y B6 siguen pendientes de Supabase, contrato desplegado, credenciales y fondos. Ver `docs/BACKEND.md` y `docs/CI.md`.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
 - [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.

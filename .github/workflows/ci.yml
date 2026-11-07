@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  FOUNDRY_VERSION: v1.9.0
+
+jobs:
+  web:
+    name: Backend and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CHAIN_MODE: mock
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --prefix web
+      - run: npm run lint --prefix web
+      - run: npm run typecheck --prefix web
+      - run: npm test --prefix web
+      - run: npm run build --prefix web
+
+  contracts:
+    name: Contracts and ABI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+          cache: false
+      - run: bash contracts/script/install-deps.sh
+      - run: forge fmt --check --root contracts
+      - run: forge build --root contracts
+      - name: Unit tests and accounting fuzz (no remote fork)
+        run: forge test --root contracts --no-match-path 'test/*.fork.t.sol' --fuzz-runs 512
+      - name: Check versioned ABI matches the contract
+        run: |
+          bash contracts/script/export-abi.sh
+          git diff --exit-code -- web/lib/chain/abi.ts
+
+  integration:
+    name: A+B on local Anvil
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+          cache: false
+      - run: npm ci --prefix web
+      - run: bash contracts/script/install-deps.sh
+      - run: forge build --root contracts
+      - name: Start disposable Anvil and run signed gateway operations
+        run: npm run test:chain --prefix web
+
+  database:
+    name: PostgreSQL migrations and permissions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-ci-only
+          POSTGRES_DB: continuum_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d continuum_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: local-ci-only
+      PGDATABASE: continuum_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Apply migrations and test backend database contract
+        shell: bash
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f supabase/tests/bootstrap.sql
+          for migration in supabase/migrations/*.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "$migration"
+          done
+          psql -X -v ON_ERROR_STOP=1 -f supabase/seed.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/tests/backend.sql
