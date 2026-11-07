@@ -35,6 +35,7 @@
   - Pagos automáticos 24/7 sin comisiones bancarias.
   - **Fondeo por tramos:** no necesita adelantar el mes entero.
   - Cancelación limpia: lo devengado queda para el trabajador y el resto vuelve al pagador.
+- **Distribución B2B2C:** el módulo del trabajador está pensado para integrarse en wallets como **Belo**, que pondría la custodia, el off-ramp y millones de usuarios. En el pitch se dice "diseñado para integrarse en Belo", **no** "integrado": no hay acuerdo.
 - Extensión, solo para el pitch: la misma primitiva sirve para pagos **B2B entre PyMEs**, con una factura que se cobra por segundo en lugar de a 60 días.
 
 ## 5. Alcance
@@ -64,6 +65,8 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 | Token | ARGt `0x59863989d080B22476DB95656d0C3CC18be92214` (Arbitrum), 18 decimals |
 | Contrato | Propio, en Solidity con Foundry y OpenZeppelin (`SafeERC20`, `ReentrancyGuard`) |
 | App | Monorepo: `contracts/` (Foundry) y `web/` (Next.js App Router, TypeScript, Tailwind) |
+| Superficies | **Trabajador** (`/worker`): mobile-first (unos 390px), **PWA liviana** y standalone por ahora, pero integrable en Belo (ver 6.1). **Pagador** (`/payer`): dashboard web de escritorio |
+| PWA | Solo `app/manifest.ts`, íconos y color de tema, con `display: standalone` y `start_url: /worker`. **Sin service worker ni modo offline** (el caché puede mostrar una versión vieja en la demo) **y sin push** (eso va en el roadmap) |
 | Backend | Route handlers de Next.js que firman con **viem** |
 | Wallets | **Custodiales**: usuarios demo fijos, con una clave privada por usuario en variables de entorno. Cada wallet necesita algo de ETH en Arbitrum para gas |
 | Auth | Selector de usuario demo ("Entrar como…"), sin signup |
@@ -71,6 +74,15 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 | IA | Claude vía **Vercel AI SDK** (tool calling). Hace falta una API key de Anthropic |
 | Deploy | Vercel |
 | Dev local | `anvil --fork-url <arbitrum RPC>` con `deal` de ARGt, o `MockERC20` si `deal` falla con el proxy |
+
+### 6.1 Reglas para que el módulo del trabajador sea integrable
+
+Hoy funciona standalone, pero lo construimos como si un host (Belo) fuera a abrirlo en un webview:
+- `app/(worker)/` tiene **su propio layout** y no depende de navegación, header ni estado global de la app ni de `/payer`.
+- El usuario se identifica por `userId`. Un host podría pasarlo, o pasar un token en el futuro, sin cambiar las pantallas.
+- Se respetan las safe areas del celular (`env(safe-area-inset-*)`) y no hay scroll horizontal en 360 a 430px.
+- Los textos y la marca propia ("Continuum") viven en el módulo. **No se copian la marca ni la interfaz de Belo.**
+- Los destinos de retiro salen de la API (`wallet` / `belo`) y no están hardcodeados, para que un host pueda definir el suyo.
 
 ## 7. Diseño del contrato `ContinuumStreams`
 
@@ -219,6 +231,7 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 - [ ] C5. Acciones por stream (top-up y cancelar) con feedback de la transacción y link a Arbiscan.
 
 ### Módulo D — UI del trabajador y agente (`web/app/(worker)/**`, `web/components/worker/**`, `web/lib/agent/**`, `web/app/api/agent/**`)
+- [ ] D0. Layout propio de `(worker)` siguiendo las reglas de 6.1, más la PWA liviana (`app/manifest.ts` y los íconos del diseño). Verificar que se instala en Android y en iPhone y que abre a pantalla completa en `/worker`.
 - [ ] D1. Home del trabajador con **el contador en tiempo real como protagonista**, usando `vestedAt` cada frame o cada 100 ms.
 - [ ] D2. Flujo de retiro: monto, destino (wallet o Belo), confirmación, hash y link a Arbiscan.
 - [ ] D3. Historial de actividad.
