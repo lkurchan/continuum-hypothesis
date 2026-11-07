@@ -32,7 +32,15 @@ Arrancar la API real solo después de configurar servicios y fondos:
 CHAIN_MODE=real npm run dev --prefix web
 ```
 
-En otra terminal, preparar un lote. Los siguientes importes son un ejemplo; ajustarlos al presupuesto aprobado de la demo:
+En otra terminal, comprobar primero las lecturas reales de las tres identidades:
+
+```bash
+npm run backend:verify-api --prefix web -- --url http://127.0.0.1:3000
+```
+
+Este comando hace únicamente GET: exige `X-Chain-Mode: real`, compara roles y wallets con las claves locales, verifica que usuarios no incluya campos privados y comprueba aislamiento de streams/actividad. No firma, no llama mutaciones y no cambia el archivo de entorno. Si cambiaron variables `NEXT_PUBLIC_*`, reconstruir el servidor de producción antes de verificarlo.
+
+Después, preparar un lote. Los siguientes importes son un ejemplo; ajustarlos al presupuesto aprobado de la demo:
 
 ```bash
 npm run backend:seed --prefix web -- \
@@ -74,5 +82,7 @@ El smoke inicia su propio servidor de producción en loopback y fuerza `CHAIN_MO
 - Contrato desplegado, bytecode igual al repositorio y prueba de ARGt real sobre fork aprobada.
 - Las tres claves locales son válidas, corresponden a wallets distintas y las wallets tienen ETH.
 - La plataforma tenía 0 ARGt al ejecutar el diagnóstico; B6 sigue pendiente de fondeo.
-- Supabase estaba pendiente de creación por otro integrante. Las migraciones se verificaron en PostgreSQL temporal; todavía no se verificó el proyecto remoto.
+- Supabase remoto validado: cuatro tablas accesibles, RPC publicado y ejecución de lote vacío aprobada sin crear filas. Las tres wallets ya coincidían con las claves; la sincronización fue idempotente y no cambió direcciones.
+- API real local: usuarios, streams e historial de las tres identidades aprobados; todavía no hay streams ni actividad. Seed preparado en dry-run para dos trabajadores, depósito de 1 ARGt por trabajador (2 ARGt total), sin enviar transacciones. Regenerar los timestamps al ejecutarlo.
+- La clave pública no estaba configurada: la comprobación remota de acceso anon queda pendiente; RLS/permisos están cubiertos por la suite SQL de CI. Esto no bloquea el backend server-side.
 - El proyecto web en Vercel sigue pendiente. El mock en memoria sirve para una única instancia local; instancias serverless distintas no comparten ese estado.

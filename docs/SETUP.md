@@ -16,18 +16,18 @@ La app abre en `http://localhost:3000`, con páginas placeholder en `/payer` y `
 
 Las dependencias de Solidity se descargan sin submódulos y no se versionan en `contracts/lib/`. El script instala forge-std `v1.17.0` y OpenZeppelin `v5.4.0`, compatible con el compilador `0.8.24`. No modifica dependencias ya instaladas.
 
-## Supabase pendiente
+## Supabase
 
-No se creó un proyecto remoto durante esta tarea: no había una conexión autenticada de Supabase disponible. Los archivos están listos para aplicarse:
+El proyecto remoto del equipo ya está configurado: se validaron las cuatro tablas, el RPC transaccional y las wallets demo, además de las lecturas HTTP en modo real. Para repetir la instalación en un proyecto nuevo:
 
 1. Crear un proyecto llamado `continuum` en la organización del equipo.
 2. Ejecutar `supabase/migrations/0001_init.sql` y luego `0002_record_stream_creation.sql`, una vez cada una, en el SQL Editor del proyecto nuevo.
 3. Ejecutar `supabase/seed.sql`. Es repetible y conserva las direcciones de wallets que ya se hayan configurado.
-4. Copiar la URL, la anon key y la service-role key en las variables correspondientes de `web/.env.local` y de Vercel.
+4. Copiar la URL y la clave de servidor (service_role o secret) en las variables correspondientes de `web/.env.local` y de Vercel. La clave anon/publishable es opcional para este backend.
 
 Las cuatro tablas tienen RLS habilitado y no tienen políticas de acceso público. El backend debe usar `SUPABASE_SERVICE_ROLE_KEY` exclusivamente en el servidor. El `userId` de la demo no constituye una sesión autenticada.
 
-El seed incluye `platform`, `worker1` y `worker2`, todos con la dirección cero como placeholder. Reemplazar esas direcciones por las wallets demo antes de usar `CHAIN_MODE=real`; las claves privadas van solo en `DEMO_PK_PLATFORM`, `DEMO_PK_WORKER1` y `DEMO_PK_WORKER2`. La dirección de Belo queda pendiente de confirmación.
+El seed inicial incluye `platform`, `worker1` y `worker2` con direcciones cero. En el proyecto actual ya coinciden con las wallets demo. Para configurar una instalación nueva, usar `backend:wallets` como explica [OPERATIONS.md](OPERATIONS.md); las claves privadas van solo en `DEMO_PK_PLATFORM`, `DEMO_PK_WORKER1` y `DEMO_PK_WORKER2`. La dirección de Belo queda pendiente de confirmación.
 
 ## Vercel pendiente
 

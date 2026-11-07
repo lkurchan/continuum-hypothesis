@@ -4,7 +4,7 @@ Pagos por segundo para freelancers y trabajadores de plataformas, en pesos oncha
 
 Ver [PRD.md](PRD.md) para alcance, arquitectura e interfaces, y [docs/SETUP.md](docs/SETUP.md) para instalar la base y preparar Supabase y Vercel.
 
-Contrato desplegado en Arbitrum One y backend funcional en modo mock. El código desplegado se contrastó con el bytecode del repositorio; el flujo con ARGt pasó en un fork local. El primer flujo del producto con transferencias reales (B6), Supabase y el deploy web siguen pendientes. ARGt es un medio de pago, **sin rendimiento**.
+Contrato desplegado en Arbitrum One y backend funcional en modo mock. El código desplegado se contrastó con el bytecode del repositorio; el flujo con ARGt pasó en un fork local. Supabase remoto y las wallets demo están configurados y sus lecturas HTTP reales fueron verificadas. El primer flujo del producto con transferencias reales (B6) y el deploy web siguen pendientes. ARGt es un medio de pago, **sin rendimiento**.
 
 ## Chain, token y contrato
 

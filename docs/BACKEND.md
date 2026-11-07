@@ -69,7 +69,7 @@ npm run typecheck --prefix web
 npm run build --prefix web
 ```
 
-Los 71 tests habituales cubren precisión, límites, roles, lotes atómicos, cancelaciones, concurrencia local, todas las rutas, aislamiento de actividad, errores de persistencia, aprobaciones, firma con la wallet correcta, receipts y eventos. Incluyen regresiones por reloj atrasado del servidor y fondeo concurrente antes de cancelar. Supabase se prueba con transporte HTTP simulado; el CI también ejecuta migraciones y pruebas SQL en PostgreSQL temporal, incluyendo rollback, precisión, repetición del seed y permisos.
+Los 74 tests habituales cubren precisión, límites, roles, lotes atómicos, cancelaciones, concurrencia local, todas las rutas, aislamiento de actividad, errores de persistencia, aprobaciones, firma con la wallet correcta, receipts y eventos. Incluyen regresiones por reloj atrasado del servidor y fondeo concurrente antes de cancelar. Supabase se prueba con transporte HTTP simulado; el CI también ejecuta migraciones y pruebas SQL en PostgreSQL temporal, incluyendo rollback, precisión, repetición del seed y permisos.
 
 Además, el gateway se verificó con firmas y receipts contra el contrato de la rama A (`4f63150`) en Anvil local: crear, aprobar, fondear, retirar, cancelar y retirar el remanente. Se comparó el vesting del dominio con el contrato y se verificó el error de stream inexistente. Se usaron wallets efímeras y un token de prueba, sin mainnet ni fondos reales.
 
@@ -83,4 +83,4 @@ npm run test:chain --prefix web
 
 El runner elige un puerto loopback libre, inicia Anvil, pasa los artefactos de este checkout, ejecuta la prueba y cierra el nodo. Falla si faltan herramientas/artefactos o no puede iniciar el nodo. La prueba aislada restaura su snapshot y se omite en `npm test` si falta `LOCAL_CHAIN_RPC_URL`; el job dedicado de CI siempre la ejecuta con `test:chain`. Ver [CI.md](CI.md).
 
-El contrato ya está desplegado y su bytecode fue contrastado con el repositorio. Pendiente B6: aplicar migraciones remotas, sincronizar las wallets en Supabase, fondear ARGt y completar el primer flujo real con hash verificable. Ver [OPERATIONS.md](OPERATIONS.md) para diagnóstico, configuración de wallets y seed por API. La UI y el agente siguen en sus módulos correspondientes.
+El contrato ya está desplegado y su bytecode fue contrastado con el repositorio. Supabase remoto, RPC y wallets demo están validados; las lecturas HTTP en modo real pasan para las tres identidades. Pendiente B6: fondear ARGt y completar el primer flujo real con hash verificable. Ver [OPERATIONS.md](OPERATIONS.md) para diagnóstico, configuración de wallets y seed por API. La UI y el agente siguen en sus módulos correspondientes.

@@ -196,14 +196,15 @@ Regla general: cada módulo toca **solo sus carpetas**. Las interfaces de la sec
 - [x] Crear la branch `main`, scaffold de `web/` (Next.js, TypeScript, Tailwind, ESLint) y de `contracts/` (Foundry con OpenZeppelin).
 - [x] Escribir los tipos (8.1), la interfaz `StreamGateway` (8.2), los stubs de las rutas de la API (8.3) y `web/.env.example`.
 - [x] Preparar y validar la migración inicial de Supabase y el seed de los tres usuarios demo.
-- [ ] Crear el proyecto de Supabase y el de Vercel (Vercel linkeado al repo).
+- [x] Crear y validar Supabase: tablas, RPC, usuarios y wallets demo.
+- [ ] Crear el proyecto de Vercel, linkeado al repo.
 - [x] Hacer el primer commit en `main`. A partir de acá, todos branchean.
 
-La base local está validada; los proyectos remotos quedan pendientes de conexión autenticada. Ver `docs/SETUP.md` para comandos, configuración de servicios y arranque de branches.
+La base local y Supabase remoto están validados; Vercel sigue pendiente. Ver `docs/SETUP.md` para comandos, configuración de servicios y arranque de branches.
 
 ### Tareas operativas (cualquiera, **apenas arranca el día**: son las bloqueantes reales)
 - [ ] Pedir ARGt en Arbitrum a los mentores de Twin (o comprarlo con USDT0 en el pool de Curve). Conseguir lo suficiente para montos creíbles.
-- [ ] Conseguir ETH en Arbitrum para gas y repartirlo entre las wallets demo (deployer, pagador y trabajadores).
+- [x] Conseguir ETH en Arbitrum para gas y repartirlo entre las wallets demo (deployer, pagador y trabajadores).
 - [ ] Confirmar con Belo o los mentores que una dirección de Belo recibe ARGt en Arbitrum, y anotar esa dirección.
 - [ ] Conseguir una API key de Anthropic.
 - [ ] Generar las wallets demo y cargar las claves en Vercel.
@@ -223,7 +224,7 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 - [x] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
 - [ ] B6. Prueba de punta a punta en mainnet: el **primer hash real**, que se guarda para el README.
 
-B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. El contrato está desplegado y se verificó su bytecode. La migración remota y B6 siguen pendientes de Supabase y fondeo de ARGt; las claves y gas de las wallets demo se comprobaron localmente. Ver `docs/OPERATIONS.md`. Ver `docs/BACKEND.md` y `docs/CI.md`.
+B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. El contrato está desplegado y se verificó su bytecode. Supabase remoto, RPC, wallets y las lecturas HTTP reales están validados. B6 sigue pendiente de fondeo de ARGt y transacciones reales; las claves y gas de las wallets demo se comprobaron localmente. Ver `docs/OPERATIONS.md`. Ver `docs/BACKEND.md` y `docs/CI.md`.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
 - [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
@@ -241,7 +242,7 @@ B1–B5 están implementados y probados con demo local, proveedores simulados y 
 
 ### Codex 1 y 2
 - [ ] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.
-- [x] Script de seed de streams demo y modo mock con datos lindos. El seed real por API está listo; su ejecución espera Supabase y ARGt.
+- [x] Script de seed de streams demo y modo mock con datos lindos. El seed real por API está listo; su ejecución espera ARGt.
 - [x] Review de los PRs de A y B (seguridad del contrato y manejo de claves).
 - [ ] Configuración de Vercel y verificación del deploy.
 
