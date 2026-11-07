@@ -8,5 +8,5 @@ export interface StreamView {
   canceledAt: number | null;
   status: 'scheduled' | 'streaming' | 'completed' | 'canceled';
 }
-export type ActivityKind = 'create' | 'topup' | 'withdraw' | 'cancel' | 'agent_payment';
+export type ActivityKind = 'create' | 'topup' | 'withdraw' | 'cancel' | 'agent_payment' | 'fee';
 export interface Activity { id: string; streamId: string; kind: ActivityKind; amount: Amount; txHash: string; explorerUrl: string; userId: string; createdAt: string; note?: string }
