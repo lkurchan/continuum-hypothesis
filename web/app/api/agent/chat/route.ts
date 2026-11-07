@@ -43,10 +43,11 @@ async function handlePOST(request: Request) {
     if (error instanceof DomainError) return errorResponse(error.message, error.status);
     return errorResponse("No se pudo preparar el asistente.", 500);
   }
-  const model = process.env.OPENAI_MODEL;
-  if (!process.env.OPENAI_API_KEY || !model) return errorResponse("El asistente no está configurado: faltan OPENAI_API_KEY u OPENAI_MODEL.", 503);
+  const model = process.env.OPENAI_MODEL?.trim();
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey || !model) return errorResponse("El asistente no está configurado: faltan OPENAI_API_KEY u OPENAI_MODEL.", 503);
 
-  const client = new OpenAI();
+  const client = new OpenAI({ apiKey });
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -81,6 +82,10 @@ async function handlePOST(request: Request) {
           write(`${wrote ? "\n\n" : ""}${reason.endsWith("?") ? reason : `No pude armar la propuesta: ${reason} Probá reformular el pedido.`}`);
         }
       } catch (error) {
+        console.error("chat_provider_error", {
+          name: error instanceof Error ? error.name : "Unknown",
+          ...(error instanceof OpenAI.APIError ? { status: error.status, code: error.code, requestId: error.requestID } : {}),
+        });
         const busy = error instanceof OpenAI.RateLimitError || (error instanceof OpenAI.APIError && (error.status ?? 0) >= 500);
         write(busy ? "\n\nEl asistente está con mucha demanda. Probá de nuevo en un momento." : "\n\nNo pude responder ahora. Probá de nuevo.");
       } finally {
