@@ -71,7 +71,7 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 | Wallets | **Custodiales**: usuarios demo fijos, con una clave privada por usuario en variables de entorno. Cada wallet necesita algo de ETH en Arbitrum para gas |
 | Auth | Acceso de operador con clave compartida del equipo y cookie firmada de 8 horas; luego selector de usuario demo ("Entrar como…"), sin signup. Backend en `docs/DEMO-LOGIN.md`; Gio implementa la pantalla |
 | Base | **Supabase** (Postgres): usuarios, metadata de streams, actividad y reglas del agente |
-| IA | Claude (`claude-opus-5-5`, effort `low`) vía el **SDK oficial de Anthropic** (`@anthropic-ai/sdk`) con streaming. Por ahora es un chat sin herramientas: el servidor le pasa los saldos ya calculados. Hace falta `ANTHROPIC_API_KEY` |
+| IA | OpenAI vía el **SDK oficial** (`openai`, Chat Completions con streaming). El servidor le pasa los saldos ya calculados. Al proveedor le explica su estado; al cliente le dice hasta cuándo está cubierto y le **propone** acuerdos con el tool `proponer_acuerdo`, que el usuario confirma en una tarjeta. Hace falta `OPENAI_API_KEY` y `OPENAI_MODEL` |
 | Deploy | Vercel |
 | Dev local | `anvil --fork-url <arbitrum RPC>` con `deal` de ARGt, o `MockERC20` si `deal` falla con el proxy |
 
@@ -192,7 +192,7 @@ Los errores devuelven `{ error: string }` con status 4xx/5xx. En modo real, toda
 
 ### 8.5 Variables de entorno (`web/.env.example`)
 
-`CHAIN_MODE`, `DEMO_AUTH_PASSWORD_HASH`, `DEMO_AUTH_SECRET`, `ARBITRUM_RPC_URL`, `STREAMS_CONTRACT_ADDRESS`, `ARGT_ADDRESS`, `DEMO_PK_<ID>` (una por usuario demo), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `ARBISCAN_API_KEY` (para verificar el contrato).
+`CHAIN_MODE`, `DEMO_AUTH_PASSWORD_HASH`, `DEMO_AUTH_SECRET`, `ARBITRUM_RPC_URL`, `STREAMS_CONTRACT_ADDRESS`, `ARGT_ADDRESS`, `DEMO_PK_<ID>` (una por usuario demo), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `ARBISCAN_API_KEY` (para verificar el contrato).
 
 ## 9. Equipo y tareas
 
@@ -212,7 +212,7 @@ La base local, Supabase remoto y el backend real en Vercel están validados. El 
 - [x] Conseguir ARGt en Arbitrum: fondeo de 3371,33 ARGt verificado en la plataforma antes de B6.
 - [x] Conseguir ETH en Arbitrum para gas y repartirlo entre las wallets demo (deployer, pagador y trabajadores).
 - [ ] Confirmar con Belo o los mentores que una dirección de Belo recibe ARGt en Arbitrum, y anotar esa dirección.
-- [ ] Conseguir una API key de Anthropic.
+- [ ] Conseguir una API key de OpenAI y elegir el modelo (`OPENAI_MODEL`).
 - [x] Generar las wallets demo y cargar las claves en Vercel, solo en Production con acceso protegido.
 
 ### Módulo A — Contrato (`contracts/`)

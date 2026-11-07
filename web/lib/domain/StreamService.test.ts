@@ -27,6 +27,16 @@ function fixture() {
   return { repo, gateway, service: new StreamService(gateway, repo, "real", () => 1010) };
 }
 
+describe("agreement labels", () => {
+  it("stores the contracted service name with each created stream", async () => {
+    const { service, gateway, repo } = fixture();
+    gateway.createStreams.mockResolvedValue({ txHash, streamIds: ["7"] });
+    await service.create({ payerId: payer.id, start: 1000, end: 4600,
+      items: [{ workerId: worker.id, totalAmount: "100", initialDeposit: "25", label: "Logística de última milla" }] });
+    expect(await repo.stream("7")).toMatchObject({ label: "Logística de última milla" });
+  });
+});
+
 describe("confirmed chain state", () => {
   it("lets the gateway validate withdrawals when the server clock trails the chain", async () => {
     const { service, gateway, repo } = fixture();

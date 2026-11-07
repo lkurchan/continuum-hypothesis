@@ -7,7 +7,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 
 export const metadata: Metadata = {
   title: "Continuum",
-  description: "Cobrá lo que trabajás, segundo a segundo, en pesos onchain (ARGt).",
+  description: "Pagos continuos entre empresas por servicios, segundo a segundo, en pesos onchain (ARGt).",
   appleWebApp: { capable: true, title: "Continuum", statusBarStyle: "default" },
 };
 

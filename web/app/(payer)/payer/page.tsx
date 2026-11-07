@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { liveStatus, liveVested, money } from "@/components/ui/format";
 import { useNow } from "@/components/ui/hooks";
-import { Avatar, ErrorNote, Icon, Skeleton, StatusPill, StreamLine, buttonStyles } from "@/components/ui/kit";
+import { Avatar, ErrorNote, FundingPill, Icon, Skeleton, StreamLine, buttonStyles } from "@/components/ui/kit";
+import { fundingView } from "@/components/ui/agreement";
+import { clock, dateLabel } from "@/components/ui/format";
 import { Enter, Page, useIntro } from "@/components/ui/motion";
 import { StreamDetail } from "@/components/payer/StreamDetail";
 import { usePayer } from "@/components/payer/PayerContext";
@@ -26,40 +28,42 @@ export default function PayerPanel() {
   const sum = (f: (s: StreamView) => number) => streams.reduce((acc, s) => acc + f(s), 0);
   const vested = sum((s) => liveVested(s, now));
   const funded = sum((s) => Number(s.deposited));
-  const withdrawn = sum((s) => Number(s.withdrawn));
+  const debt = sum((s) => fundingView(s, now).debt);
 
   return (
     <Page>
     <div className="flex flex-col gap-7">
       <Enter className="flex items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[30px] font-semibold tracking-[-0.04em]">Pagos en curso</h1>
+          <h1 className="text-[30px] font-semibold tracking-[-0.04em]">Acuerdos de servicio</h1>
           <span className="text-sm text-muted">{active} {active === 1 ? "activo" : "activos"} · ARGt</span>
         </div>
-        <Link href="/payer/nuevo" transitionTypes={["nav-forward"]} className={buttonStyles.small}><Icon name="plus" size={16} /> Nuevo pago</Link>
+        <Link href="/payer/nuevo" transitionTypes={["nav-forward"]} className={buttonStyles.small}><Icon name="plus" size={16} /> Nuevo acuerdo</Link>
       </Enter>
 
       <section aria-label="Resumen" className="grid gap-3 sm:grid-cols-3">
-        <Kpi i={1} label={<><span className="size-1.5 rounded-full bg-celeste animate-pulse-dot" />Ganado ahora</>} value={money(vested * intro, 2)} />
+        <Kpi i={1} label={<><span className="size-1.5 rounded-full bg-celeste animate-pulse-dot" />Servicio devengado</>} value={money(vested * intro, 2)} />
         <Kpi i={2} label="Fondeado" value={money(funded * intro)} />
-        <Kpi i={3} label="Retirado" value={money(withdrawn * intro)} />
+        <Kpi i={3} label="Le debés a proveedores" value={money(debt * intro, 2)} danger={debt >= 0.01} />
       </section>
 
       {ordered.length === 0 ? (
         <div className="animate-enter flex flex-col items-center gap-4 rounded-3xl bg-white py-20">
-          <span className="text-muted">Todavía no creaste pagos.</span>
+          <span className="text-muted">Todavía no tenés acuerdos de servicio.</span>
           <Link href="/payer/nuevo" transitionTypes={["nav-forward"]} className={buttonStyles.small}>Crear el primero</Link>
         </div>
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[1fr_360px]">
           <Enter i={4} as="section" className="overflow-hidden rounded-3xl border border-line bg-white">
             <div className="grid grid-cols-[1.4fr_1.2fr_1fr_auto] gap-4 border-b border-line-soft px-5 py-3 text-xs text-subtle">
-              <span>Trabajador</span><span>Progreso</span><span className="text-right">Ganado</span><span className="w-[104px]">Estado</span>
+              <span>Proveedor</span><span>Devengado y fondeado</span><span className="text-right">Cubierto hasta</span><span className="w-[104px]">Estado</span>
             </div>
             {ordered.map((s, idx) => {
               const total = Number(s.totalAmount);
               const v = liveVested(s, now);
               const status = liveStatus(s, now);
+              const f = fundingView(s, now);
+              const span = s.end - s.start;
               const on = s.id === current?.id;
               return (
                 <button key={s.id} type="button" aria-pressed={on} onClick={() => setSelected(s.id)} style={{ "--i": 5 + idx } as React.CSSProperties}
@@ -74,8 +78,8 @@ export default function PayerPanel() {
                   <span className="flex flex-col gap-1">
                     <StreamLine earned={v / total} funded={Number(s.deposited) / total} live={status === "streaming"} />
                   </span>
-                  <span className="tnum text-right text-sm font-semibold">{money(v)}</span>
-                  <span className="w-[104px]"><StatusPill status={status} /></span>
+                  <span className={`tnum text-right text-sm font-medium ${f.state === "atrasado" ? "text-danger" : ""}`}>{f.state === "cancelado" ? "—" : f.fundedUntil === null ? "Completo" : span < 86_400 ? clock(f.fundedUntil) : dateLabel(f.fundedUntil)}</span>
+                  <span className="w-[104px]"><FundingPill state={f.state} /></span>
                 </button>
               );
             })}
@@ -88,11 +92,11 @@ export default function PayerPanel() {
   );
 }
 
-function Kpi({ label, value, i }: { label: React.ReactNode; value: string; i: number }) {
+function Kpi({ label, value, i, danger = false }: { label: React.ReactNode; value: string; i: number; danger?: boolean }) {
   return (
     <div className="animate-enter flex flex-col gap-2 rounded-3xl border border-line bg-white px-5 py-4" style={{ "--i": i } as React.CSSProperties}>
       <span className="inline-flex items-center gap-2 text-[13px] text-muted">{label}</span>
-      <span className="tnum text-[28px] font-medium leading-none tracking-[-0.04em]">{value}</span>
+      <span className={`tnum text-[28px] font-medium leading-none tracking-[-0.04em] transition-colors duration-300 ${danger ? "text-danger" : ""}`}>{value}</span>
     </div>
   );
 }

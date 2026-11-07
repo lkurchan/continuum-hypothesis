@@ -6,13 +6,13 @@ export type Direction = "out" | "in" | "neutral";
 
 export function describe(a: Activity, payerName: string): { title: string; direction: Direction; sign: string } {
   switch (a.kind) {
-    case "withdraw": return { title: "Retiro", direction: "out", sign: "−" };
+    case "withdraw": return { title: "Cobro", direction: "out", sign: "−" };
     case "agent_payment": return { title: "Pago del copiloto", direction: "out", sign: "−" };
-    case "create": return { title: `${payerName} fondeó tu pago`, direction: "in", sign: "+" };
-    case "topup": return { title: `${payerName} recargó tu pago`, direction: "in", sign: "+" };
-    case "cancel": return { title: "Pago cancelado", direction: "neutral", sign: "" };
-    // Fee rows are filtered out for providers in StreamService.activity; kept for exhaustiveness.
-    case "fee": return { title: "Comisión Continuum", direction: "neutral", sign: "" };
+    case "create": return { title: `${payerName} fondeó el primer tramo`, direction: "in", sign: "+" };
+    case "topup": return { title: `${payerName} fondeó un tramo`, direction: "in", sign: "+" };
+    case "cancel": return { title: "Acuerdo cancelado", direction: "neutral", sign: "" };
+    // Kinds added by the pivot (the client's fee) are never listed to the provider.
+    default: return { title: "Movimiento", direction: "neutral", sign: "" };
   }
 }
 
