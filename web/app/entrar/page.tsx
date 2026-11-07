@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/components/ui/api";
 import { rememberUser } from "@/components/ui/hooks";
-import { Avatar, ErrorNote, Icon, Logo, NetworkChip, Skeleton } from "@/components/ui/kit";
+import { Avatar, ErrorNote, Icon, Logo, Skeleton } from "@/components/ui/kit";
 import { Enter } from "@/components/ui/motion";
 import type { DemoUser } from "@/lib/domain/types";
 
@@ -22,13 +22,12 @@ export default function EntryPage() {
     router.push("/demo");
   };
 
-  const ordered = users ? [...users].sort((a, b) => (a.role === b.role ? 0 : a.role === "worker" ? -1 : 1)) : [];
+  const ordered = users?.filter(user => user.role === "payer") ?? [];
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[1100px] flex-col px-6 pb-10 pt-7">
       <header className="animate-enter flex items-center justify-between">
         <Logo />
-        <NetworkChip />
       </header>
 
       <div className="grid grow items-center gap-12 py-12 lg:grid-cols-[1.15fr_1fr]">
@@ -63,7 +62,7 @@ export default function EntryPage() {
                 : <Avatar name={u.name} tone={i === 0 ? "celeste" : "neutral"} />}
               <span className="flex grow flex-col gap-0.5">
                 <span className="text-base font-medium">{u.name}</span>
-                <span className="text-[13px] text-muted">Nodo Software SRL · cobrás y pagás</span>
+                <span className="text-[13px] text-muted">Acosta Servicios SRL · cobrás y pagás</span>
               </span>
               <Icon name="chevron" className="text-faint transition-transform duration-500 ease-spring group-hover:translate-x-0.5" />
             </button>

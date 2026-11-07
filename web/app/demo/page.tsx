@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/components/ui/api";
 import {
-  clock, dateLabel, durationLabel, initials, isOnchain, liveParts, money,
+  clock, dateLabel, durationLabel, initials, liveParts, money,
 } from "@/components/ui/format";
 import { useAccount, useNow } from "@/components/ui/hooks";
-import { ErrorNote, Hash, Icon, MockNotice, NetworkChip } from "@/components/ui/kit";
+import { ErrorNote, Hash, Icon } from "@/components/ui/kit";
 import { availableCents, pickRoles, planWithdrawal, splitStreams, withdrawalReceiver, type DemoRoles } from "@/lib/demo/account";
 import type { Activity, DemoUser, StreamView } from "@/lib/domain/types";
 import { addAmounts } from "@/lib/domain/amounts";
@@ -19,10 +19,17 @@ import { PayerProvider } from "@/components/payer/PayerContext";
 import { ProposalCard } from "@/components/payer/ProposalCard";
 
 // Presentation name of the composed demo account (payer + receiver identities).
-const ACCOUNT_NAME = "Nodo Software SRL";
+const ACCOUNT_NAME = "Acosta Servicios SRL";
 type View = "inicio" | "copiloto" | "contratos";
 type DisplayContract = { name: string; service: string; monthly: number; earned: number; direction: "in" | "out"; period?: number; deposited?: number };
-const ACTION_STYLE = "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-celeste px-5 text-[15px] font-semibold text-ink transition hover:brightness-95 disabled:opacity-40";
+const ACTION_STYLE = "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 text-[15px] font-semibold text-white transition hover:opacity-85 disabled:opacity-40";
+const compactMoney = (value: string | number) => {
+  const n = Math.abs(Number(value));
+  const decimals = n > 0 && n < 0.01 ? Math.min(18, Math.ceil(-Math.log10(n)) + 1) : 2;
+  return money(value, decimals).replace(/(,\d*?[1-9])0+$/, "$1").replace(/,0+$/, "");
+};
+const SELECT_STYLE = "appearance-none bg-no-repeat bg-[length:16px_16px] bg-[position:right_14px_center] !pr-10";
+const SELECT_ARROW = { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2362626C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` };
 const sum = <T,>(list: T[], f: (x: T) => number) => list.reduce((a, x) => a + f(x), 0);
 
 export default function DemoAccountPage() {
@@ -53,15 +60,14 @@ function Shell({ children, view = "inicio", onNavigate }: { children: React.Reac
             <span className="text-[17px] font-semibold tracking-[-0.03em]">continuum</span>
           </Link>
           <nav aria-label="Navegación principal" className="order-last flex w-full justify-center gap-1 sm:order-none sm:w-auto">
-            {([["inicio", "Inicio", "home"], ["copiloto", "Copiloto", "chat"], ["contratos", "Contratos", "list"]] as const).map(([id, label, icon]) => (
+            {([["inicio", "Inicio"], ["copiloto", "Copiloto"], ["contratos", "Contratos"]] as const).map(([id, label]) => (
               <button key={id} type="button" aria-current={view === id ? "page" : undefined} onClick={() => onNavigate?.(id)}
                 className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium ${view === id ? "bg-ink text-white" : "text-muted hover:bg-surface"}`}>
-                <Icon name={icon} size={16} />{label}
+                {label}
               </button>
             ))}
           </nav>
           <div className="flex items-center gap-2.5">
-            <NetworkChip />
             <Link href="/entrar" aria-label="Cambiar cuenta" title="Cambiar cuenta" className="flex size-10 items-center justify-center rounded-xl bg-ink text-celeste-dark hover:bg-ink-2">
               <Icon name="person" size={21} strokeWidth={1.7} />
             </Link>
@@ -117,7 +123,6 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
     <Shell view={view} onNavigate={navigate}>
       <div className="flex flex-col gap-1.5">
         <h1 className="text-[32px] font-semibold tracking-[-0.04em]">{ACCOUNT_NAME}</h1>
-        <span className="text-sm text-muted">Compra y vende servicios</span>
       </div>
       {(payer.error || receiver.error) && <ErrorNote>{payer.error || receiver.error}</ErrorNote>}
       <div hidden={view !== "inicio"}>
@@ -130,7 +135,7 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
               className={`flex min-w-0 flex-col gap-6 rounded-[24px] border px-5 pb-3 pt-6 sm:px-7 ${dark ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
-                  <h2 className="flex items-center gap-2 text-base font-semibold">{dark && <span className="size-2 rounded-full bg-celeste-dark animate-pulse-dot" />}{dark ? "Cobrás" : "Pagás"}</h2>
+                  <h2 className="flex items-center gap-2 text-base font-semibold">{dark ? "Cobrás" : "Pagás"}</h2>
                   <span className={`tnum text-sm ${dark ? "text-celeste-dark" : "text-muted"}`}>{dark ? "+" : "−"}{money(dark ? preview.inRate : preview.outRate, 2)} /s</span>
                 </div>
                 <span className={`text-xs ${dark ? "text-faint" : "text-muted"}`}>{list.length} contratos</span>
@@ -138,7 +143,7 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
               <span className="tnum whitespace-nowrap text-[clamp(32px,4.6vw,60px)] font-medium leading-none tracking-[-0.055em]">
                 ${amount.int}<span className={dark ? "text-subtle" : "text-faint"}>,{amount.cents}</span>
               </span>
-              <button type="button" onClick={() => setPanel(dark ? "withdraw" : "new")} disabled={dark && loading} className={ACTION_STYLE}>
+              <button type="button" onClick={() => setPanel(dark ? "withdraw" : "new")} disabled={dark && loading} className={`${ACTION_STYLE} ${dark ? "!bg-white !text-ink" : ""}`}>
                 <Icon name={dark ? "in" : "plus"} size={18} />{dark ? "Retirar" : "Nuevo contrato"}
               </button>
               <ul>{list.map(c => <Row key={c.name + c.service} dark={dark} name={c.name} sub={c.service} amount={money(c.earned, 2)}
@@ -160,14 +165,17 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
           <h2 className="text-2xl font-semibold tracking-tight">Contratos</h2>
           <button type="button" className={`${ACTION_STYLE} max-w-[210px]`} onClick={() => setPanel("new")}><Icon name="plus" />Nuevo contrato</button>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{contracts.map(c => (
-          <button key={c.name + c.service} type="button" onClick={() => setDetail(c)} className="flex flex-col gap-4 rounded-2xl border border-line bg-white p-5 text-left hover:border-celeste">
-            <span className="flex w-full items-center justify-between text-xs text-muted"><span>{c.direction === "in" ? "Cobrás" : "Pagás"}</span><span className="rounded-full bg-celeste-soft px-2 py-1 text-celeste-ink">En curso</span></span>
-            <span><span className="block text-lg font-semibold">{c.name}</span><span className="text-sm text-muted">{c.service}</span></span>
-            <span className="tnum text-2xl font-semibold">{money(c.monthly)}<span className="text-xs font-normal text-muted"> / {c.period ? durationLabel(c.period) : "mes"}</span></span>
-            <span className="flex w-full justify-between border-t border-line-soft pt-3 text-xs text-muted"><span>Ver contrato</span><Icon name="arrow" size={15} /></span>
-          </button>
-        ))}</div>
+        <div className="overflow-hidden rounded-2xl border border-line bg-white">
+          <div className="hidden grid-cols-[minmax(0,2fr)_100px_minmax(140px,1fr)_100px_24px] gap-6 border-b border-line bg-page px-6 py-3 text-xs font-medium text-muted md:grid"><span>Empresa / servicio</span><span>Tipo</span><span className="text-right">Importe</span><span className="text-center">Estado</span><span /></div>
+          {contracts.map(c => <button key={c.name + c.service} type="button" onClick={() => setDetail(c)}
+            className="grid w-full grid-cols-[minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-line-soft px-4 py-5 text-left transition hover:bg-page last:border-0 md:grid-cols-[minmax(0,2fr)_100px_minmax(140px,1fr)_100px_24px] md:gap-6 md:px-6">
+            <span className="min-w-0"><span className="block truncate text-base font-semibold">{c.name}</span><span className="mt-1 block truncate text-xs text-muted">{c.service}</span><span className="mt-2 block text-xs text-muted md:hidden">{c.direction === "in" ? "Cobrás" : "Pagás"} · En curso</span></span>
+            <span className="hidden text-sm text-muted md:block">{c.direction === "in" ? "Cobrás" : "Pagás"}</span>
+            <span className="text-right"><span className="tnum block text-base font-semibold">{money(c.monthly)}</span><span className="text-xs text-muted">{c.period ? durationLabel(c.period) : "por mes"}</span></span>
+            <span className="hidden rounded-full bg-surface px-3 py-1.5 text-center text-xs text-muted md:block">En curso</span>
+            <Icon name="chevron" size={16} className="text-subtle" />
+          </button>)}
+        </div>
         <details className="mt-5 rounded-2xl border border-line bg-white px-5 py-4">
           <summary className="cursor-pointer text-sm font-medium">Comprobantes onchain</summary>
           <ul className="mt-3">{moves.map(m => <Move key={m.id} move={m} nameOf={nameOf} outgoing={outgoing} />)}</ul>
@@ -190,7 +198,7 @@ function Account({ roles, users }: { roles: DemoRoles; users: DemoUser[] }) {
 function Copilot({ userId }: { userId: string }) {
   const [scenario] = useState(() => {
     const p = presentationAt(Date.now() / 1000);
-    return `Analizá este escenario de Nodo Software SRL que muestra la interfaz. Para este análisis usá estos contratos ilustrativos, no los saldos de la prueba onchain: cobros mensuales ${p.incoming.map(c => `${c.name}: ${c.monthly}`).join(", ")}; pagos mensuales ${p.outgoing.map(c => `${c.name}: ${c.monthly}`).join(", ")}; cobrado en el mes ${p.earned.toFixed(2)}, pagado ${p.paid.toFixed(2)} ARGt. No presentes estas cifras como fondos onchain verificables. No propongas contratos nuevos salvo pedido explícito. Si el usuario pide operar, el monto y destinatario deben confirmarse y las restricciones reales siguen vigentes.`;
+    return `Analizá este escenario de Acosta Servicios SRL que muestra la interfaz. Para este análisis usá estos contratos ilustrativos, no los saldos de la prueba onchain: cobros mensuales ${p.incoming.map(c => `${c.name}: ${c.monthly}`).join(", ")}; pagos mensuales ${p.outgoing.map(c => `${c.name}: ${c.monthly}`).join(", ")}; cobrado en el mes ${p.earned.toFixed(2)}, pagado ${p.paid.toFixed(2)} ARGt. No presentes estas cifras como fondos onchain verificables. No propongas contratos nuevos salvo pedido explícito. Si el usuario pide operar, el monto y destinatario deben confirmarse y las restricciones reales siguen vigentes.`;
   });
   const { messages, busy, send } = useChat(userId, scenario);
   const [draft, setDraft] = useState("");
@@ -198,7 +206,7 @@ function Copilot({ userId }: { userId: string }) {
   return <section aria-label="Copiloto" className="mx-auto flex min-h-[500px] w-full max-w-[760px] flex-col gap-5 rounded-3xl border border-line bg-white p-5 sm:p-7">
     <div><h2 className="text-2xl font-semibold tracking-tight">Copiloto</h2><p className="mt-1 text-sm text-muted">Tus cobros, pagos y próximos pasos, en una conversación.</p></div>
     <div className="flex grow flex-col gap-4">{messages.length === 0 ? <>
-      <Bubble role="assistant">Hola. Te ayudo a entender el flujo de caja de Nodo Software SRL y a planificar tus próximos pagos.</Bubble>
+      <Bubble role="assistant">Hola. Te ayudo a entender el flujo de caja de Acosta Servicios SRL y a planificar tus próximos pagos.</Bubble>
       <div className="flex flex-wrap gap-2">{["Resumen de mis contratos", "¿Cuánto me queda a fin de mes?", "¿Cómo organizar mis próximos pagos?"].map(t => <button key={t} type="button" onClick={() => ask(t)} className="rounded-full border border-line px-4 py-2 text-xs hover:bg-surface">{t}</button>)}</div>
     </> : messages.map((m, i) => <div key={i} className="flex flex-col gap-3"><Bubble role={m.role}>{m.content || <Typing />}</Bubble>{m.proposal && <ProposalCard proposal={m.proposal} />}</div>)}</div>
     <form className="flex items-center gap-2 rounded-2xl border border-line p-2 pl-4" onSubmit={e => { e.preventDefault(); ask(draft); }}>
@@ -285,7 +293,6 @@ function Drawer({ title, onClose, children }: { title: string; onClose: () => vo
 }
 
 function Done({ title, subtitle, hashes, onClose, action }: { title: string; subtitle: string; hashes: string[]; onClose: () => void; action: string }) {
-  const mock = hashes.some((h) => !isOnchain(h));
   return (
     <div className="flex grow flex-col items-center justify-center gap-5 text-center">
       <span className="flex size-[72px] items-center justify-center rounded-full bg-ink animate-pop">
@@ -296,7 +303,6 @@ function Done({ title, subtitle, hashes, onClose, action }: { title: string; sub
         <span className="text-[15px] text-muted">{subtitle}</span>
       </div>
       <div className="flex flex-col items-center gap-1.5">{hashes.map((h) => <Hash key={h} hash={h} />)}</div>
-      {mock && <MockNotice />}
       <button type="button" onClick={onClose} className="mt-2 h-[52px] w-full rounded-[14px] bg-ink text-[15px] font-semibold text-white">{action}</button>
     </div>
   );
@@ -348,10 +354,10 @@ function NewContract({ roles, onClose, onCreated }: {
 
   const field = "h-12 min-w-0 rounded-xl border border-line bg-white px-3 text-base outline-none focus:border-ink disabled:opacity-50";
   return <Drawer title="Nuevo contrato" onClose={() => { if (!busy) onClose(); }}>
-    {result ? <Done title={`Contrato #${result.ids.join(", #")}`} subtitle={`${money(terms?.totalAmount ?? "0")} en servicios · ${money(terms?.initialDeposit ?? "0", 2)} depositados`}
+    {result ? <Done title={`Contrato #${result.ids.join(", #")}`} subtitle={`${money(terms?.totalAmount ?? "0")} en servicios · ${compactMoney(terms?.initialDeposit ?? "0")} depositados`}
       hashes={[result.hash]} onClose={onClose} action="Ver contrato" /> : <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2"><label htmlFor="provider" className="text-sm font-semibold">Pagás a</label>
-        <select id="provider" value={providerId} onChange={e => setProviderId(e.target.value)} disabled={busy} className={field}>
+        <select style={SELECT_ARROW} id="provider" value={providerId} onChange={e => setProviderId(e.target.value)} disabled={busy} className={`${field} ${SELECT_STYLE}`}>
           {roles.providers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
       </div>
@@ -364,7 +370,7 @@ function NewContract({ roles, onClose, onCreated }: {
       <fieldset disabled={busy}><legend className="mb-2 text-sm font-semibold">Duración</legend>
         <div className="grid grid-cols-2 gap-2">
           <input aria-label="Cantidad de duración" type="number" min="1" step="1" value={duration} onChange={e => setDuration(e.target.value)} className={field} />
-          <select aria-label="Unidad de duración" value={unit} onChange={e => setUnit(e.target.value as DurationUnit)} className={field}>
+          <select style={SELECT_ARROW} aria-label="Unidad de duración" value={unit} onChange={e => setUnit(e.target.value as DurationUnit)} className={`${field} ${SELECT_STYLE}`}>
             <option value="minutes">Minutos</option><option value="hours">Horas</option><option value="days">Días</option><option value="months">Meses</option>
           </select>
         </div>
@@ -379,14 +385,14 @@ function NewContract({ roles, onClose, onCreated }: {
       </fieldset>
       <div className="flex flex-col gap-3 rounded-2xl bg-ink p-5 text-white">
         <span className="text-xs text-faint">{provider.name} cobra</span>
-        <span className="tnum text-3xl font-medium tracking-tight">{money(terms ? Number(terms.totalAmount) / terms.seconds : 0, 4)}<span className="text-base text-subtle"> /s</span></span>
-        <div className="tnum border-t border-[#26262B] pt-3 text-sm"><span className="text-faint">Fondeás ahora </span>{money(terms?.initialDeposit ?? "0", 2)}</div>
-        <span className="tnum text-xs text-faint">Comisión 0,05%: {money(fee, 5)} · Total: {money(totalDebit, 5)}</span>
+        <span className="tnum text-3xl font-medium tracking-tight">{compactMoney(terms ? Number(terms.totalAmount) / terms.seconds : 0)}<span className="text-base text-subtle"> /s</span></span>
+        <div className="tnum border-t border-[#26262B] pt-3 text-sm"><span className="text-faint">Fondeás ahora </span>{compactMoney(terms?.initialDeposit ?? "0")}</div>
+        <span className="tnum text-xs text-faint">Comisión 0,05%: {compactMoney(fee)} · Total: {compactMoney(totalDebit)}</span>
       </div>
       {!terms && <p className="text-xs text-danger">Revisá los importes y la duración. El fondeo inicial no puede superar el monto del contrato.</p>}
       {error && <ErrorNote>{error}</ErrorNote>}
       <button type="button" onClick={() => { void handleCreate(); }} disabled={!valid} className="flex h-14 shrink-0 items-center justify-center gap-2 rounded-xl bg-ink text-sm font-semibold text-white disabled:opacity-40">
-        {busy && <Spinner />}{busy ? "Creando contrato…" : `Crear y fondear ${money(terms?.initialDeposit ?? "0", 2)}`}
+        {busy && <Spinner />}{busy ? "Creando contrato…" : `Crear y fondear ${compactMoney(terms?.initialDeposit ?? "0")}`}
       </button>
     </div>}
   </Drawer>;
@@ -450,15 +456,15 @@ function WithdrawalAccount({ receiver, workers, onSelect, now, onClose, onDone }
         <div className="flex flex-col gap-[22px]">
           <div className="flex flex-col gap-2">
             <label htmlFor="withdraw-account" className="text-sm font-semibold">Cuenta de cobro</label>
-            <select id="withdraw-account" value={receiver.id} disabled={busy} onChange={e => onSelect(e.target.value)}
-              className="h-12 rounded-xl border border-line bg-white px-3 text-sm">
+            <select style={SELECT_ARROW} id="withdraw-account" value={receiver.id} disabled={busy} onChange={e => onSelect(e.target.value)}
+              className={`h-12 rounded-xl border border-line bg-white px-3 text-sm ${SELECT_STYLE}`}>
               {workers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1.5 rounded-[18px] bg-ink p-5 text-white">
-            <span className="flex items-center gap-2 text-[13px] text-faint"><span className="size-[7px] rounded-full bg-celeste-dark animate-pulse-dot" />Disponible para retirar</span>
+            <span className="flex items-center gap-2 text-[13px] text-faint">Disponible para retirar</span>
             <span className="tnum text-4xl font-medium leading-none tracking-[-0.05em]">${a.int}<span className="text-subtle">,{a.cents}</span></span>
-            <span className="text-xs text-faint">ARGt · Nodo Software SRL</span>
+            <span className="text-xs text-faint">ARGt · Acosta Servicios SRL</span>
           </div>
           <div className="flex flex-col gap-2.5">
             <label htmlFor="wd" className="text-sm font-semibold">Monto</label>
