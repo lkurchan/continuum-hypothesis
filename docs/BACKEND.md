@@ -51,7 +51,7 @@ Para habilitar `CHAIN_MODE=real`:
 1. Aplicar `0001_init.sql`, `0002_record_stream_creation.sql` y `seed.sql` en Supabase.
 2. Reemplazar las direcciones cero del seed por las wallets demo; configurar Belo solo después de confirmar su compatibilidad con ARGt en Arbitrum.
 3. Configurar Supabase, RPC, dirección del contrato y las claves `DEMO_PK_*` del lado servidor. Cada clave debe corresponder a la dirección guardada para ese usuario.
-4. Integrar el ABI exportado por A en `web/lib/chain/abi.ts`. El placeholder vacío hace fallar el modo real antes de firmar.
+4. Usar el contrato correspondiente al ABI integrado en `web/lib/chain/abi.ts`. El CI comprueba que su export coincide con Solidity; regenerarlo si cambia el contrato.
 5. Tener ARGt en el pagador y ETH para gas en las wallets que firman. Ejecutar B6 con el contrato funcional y registrar los hashes reales.
 
 El gateway valida Arbitrum One y ARGt, aprueba el monto necesario, simula, firma, espera receipts y obtiene IDs/refund/kept de los eventos emitidos por el contrato. Las mutaciones se serializan por proceso y por wallet; el contrato debe volver a validar permisos, saldos y límites. No hay fallback automático de real a mock.
@@ -69,21 +69,18 @@ npm run typecheck --prefix web
 npm run build --prefix web
 ```
 
-Los 56 tests habituales cubren precisión, límites, roles, lotes atómicos, cancelaciones, concurrencia local, todas las rutas, aislamiento de actividad, errores de persistencia, aprobaciones, firma con la wallet correcta, receipts y eventos. Supabase se prueba con transporte HTTP simulado. Las migraciones se validaron en PostgreSQL temporal, incluyendo rollback y permisos del RPC.
+Los 58 tests habituales cubren precisión, límites, roles, lotes atómicos, cancelaciones, concurrencia local, todas las rutas, aislamiento de actividad, errores de persistencia, aprobaciones, firma con la wallet correcta, receipts y eventos. Incluyen regresiones por reloj atrasado del servidor y fondeo concurrente antes de cancelar. Supabase se prueba con transporte HTTP simulado; el CI también ejecuta migraciones y pruebas SQL en PostgreSQL temporal, incluyendo rollback, precisión, repetición del seed y permisos.
 
 Además, el gateway se verificó con firmas y receipts contra el contrato de la rama A (`4f63150`) en Anvil local: crear, aprobar, fondear, retirar, cancelar y retirar el remanente. Se comparó el vesting del dominio con el contrato y se verificó el error de stream inexistente. Se usaron wallets efímeras y un token de prueba, sin mainnet ni fondos reales.
 
-Después de integrar el módulo A, esta prueba opcional puede repetirse compilando sus artefactos y levantando un Anvil descartable:
+Para repetir la integración con los artefactos actuales y un Anvil descartable:
 
 ```bash
-# Desde la raíz, compilar el contrato y MockERC20 de A:
+# Desde la raíz, con Foundry y Node 24 en PATH:
 forge build --root contracts
-# En una terminal separada:
-anvil --host 127.0.0.1 --port 8547 --chain-id 42161 --accounts 0
-# Desde la raíz, contra ese Anvil:
-LOCAL_CHAIN_RPC_URL=http://127.0.0.1:8547 npm test --prefix web -- lib/chain/ViemStreamGateway.integration.test.ts
+npm run test:chain --prefix web
 ```
 
-La prueba solo acepta RPC loopback, restaura un snapshot al terminar y se omite en `npm test` si falta `LOCAL_CHAIN_RPC_URL`. `CONTINUUM_TEST_ARTIFACTS` permite indicar otra carpeta de artefactos compilados para comprobar una copia temporal del módulo A.
+El runner elige un puerto loopback libre, inicia Anvil, pasa los artefactos de este checkout, ejecuta la prueba y cierra el nodo. Falla si faltan herramientas/artefactos o no puede iniciar el nodo. La prueba aislada restaura su snapshot y se omite en `npm test` si falta `LOCAL_CHAIN_RPC_URL`; el job dedicado de CI siempre la ejecuta con `test:chain`. Ver [CI.md](CI.md).
 
 Pendiente B6: desplegar/integrar el contrato de A, aplicar migraciones remotas, configurar claves y fondos, y completar el primer flujo real con hash verificable. La UI y el agente siguen en sus módulos correspondientes.

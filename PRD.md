@@ -197,10 +197,10 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 - [ ] Generar las wallets demo y cargar las claves en Vercel.
 
 ### Módulo A — Contrato (`contracts/`)
-- [ ] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
+- [x] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
 - [ ] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
 - [ ] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**. Publicar la dirección en el canal del equipo.
-- [ ] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
+- [x] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
 - [ ] A5. Después: ayudar a B con la integración y sembrar los streams para la demo.
 
 ### Módulo B — Backend y chain (`web/lib/domain`, `web/lib/chain`, `web/lib/db`, `web/app/api/**`, `supabase/`)
@@ -211,7 +211,7 @@ La base local está validada; los proyectos remotos quedan pendientes de conexi�
 - [x] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
 - [ ] B6. Prueba de punta a punta en mainnet: el **primer hash real**, que se guarda para el README.
 
-B1–B5 están implementados y probados con demo local y proveedores simulados. La migración remota y la integración real siguen pendientes de Supabase, ABI/contrato de A, credenciales y fondos. Ver `docs/BACKEND.md`.
+B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. La migración remota y B6 siguen pendientes de Supabase, contrato desplegado, credenciales y fondos. Ver `docs/BACKEND.md` y `docs/CI.md`.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
 - [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
