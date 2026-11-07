@@ -6,6 +6,7 @@ import { api } from "@/components/ui/api";
 import { explorerTx, groupWhole, liveAvailable, money, parseWhole, shortAddress, shortHash } from "@/components/ui/format";
 import { useNow } from "@/components/ui/hooks";
 import { ErrorNote, Icon, MockNotice, buttonStyles } from "@/components/ui/kit";
+import { Enter, Page, Segmented } from "@/components/ui/motion";
 import { primaryStream, useWorker } from "@/components/worker/WorkerContext";
 
 type Destination = "belo" | "wallet";
@@ -23,7 +24,7 @@ export default function WithdrawPage() {
   const stream = streams ? primaryStream(streams, now) : null;
   const available = stream ? Math.floor(liveAvailable(stream, now)) : 0;
 
-  if (receipt && user) return <Confirmed receipt={receipt} name={user.name} beloAddress={user.beloAddress} address={user.address} remaining={stream ? liveAvailable(stream, now) : 0} />;
+  if (receipt && user) return <Page><Confirmed receipt={receipt} name={user.name} beloAddress={user.beloAddress} address={user.address} remaining={stream ? liveAvailable(stream, now) : 0} /></Page>;
 
   const dest: Destination = destination ?? (user?.beloAddress ? "belo" : "wallet");
   const value = amount ?? Math.min(available, Math.floor(available / 2));
@@ -47,21 +48,23 @@ export default function WithdrawPage() {
   };
 
   const chips = [["25%", 0.25], ["50%", 0.5], ["75%", 0.75], ["Todo", 1]] as const;
+  const activeChip = chips.find(([, share]) => value > 0 && Math.floor(available * share) === value)?.[0] ?? "";
   const destinations = [
     { id: "belo" as const, title: "Belo", sub: "Para gastar con tu tarjeta", addr: user?.beloAddress, icon: "card" as const },
     { id: "wallet" as const, title: "Mi wallet", sub: "Queda en ARGt", addr: user?.address, icon: "wallet" as const },
   ].filter((d) => d.addr);
 
   return (
+    <Page>
     <div className="flex grow flex-col pb-[max(28px,env(safe-area-inset-bottom))]">
       <header className="grid h-11 grid-cols-[44px_1fr_44px] items-center">
-        <Link href="/worker" aria-label="Volver al inicio" className="flex size-11 items-center justify-center rounded-full border border-line">
+        <Link href="/worker" transitionTypes={["nav-back"]} aria-label="Volver al inicio" className="flex size-11 items-center justify-center rounded-full border border-line transition-transform duration-500 ease-spring active:scale-90">
           <Icon name="back" />
         </Link>
         <h1 className="text-center text-[17px] font-semibold tracking-[-0.01em]">Retirar</h1>
       </header>
 
-      <section aria-label="Monto" className="mt-9 flex flex-col items-center gap-3.5">
+      <Enter i={1} as="section" className="mt-9 flex flex-col items-center gap-3.5">
         <span className="tnum text-sm text-muted">Disponible {money(available)}</span>
         <label className="flex w-full items-baseline justify-center gap-1.5 tracking-[-0.045em]">
           <span className="text-[32px] text-faint">$</span>
@@ -73,41 +76,34 @@ export default function WithdrawPage() {
         <span className={`text-[13px] ${over ? "text-danger" : "text-subtle"}`}>
           {over ? "Supera lo que ganaste hasta ahora" : "1 ARGt = 1 peso argentino"}
         </span>
-        <div role="group" aria-label="Montos rápidos" className="mt-1.5 grid w-full grid-cols-4 gap-2">
-          {chips.map(([label, share]) => {
-            const v = Math.floor(available * share);
-            const on = value === v && v > 0;
-            return (
-              <button key={label} type="button" aria-pressed={on} onClick={() => setAmount(v)}
-                className={`h-11 rounded-full border text-sm font-medium transition ${on ? "border-ink bg-ink text-white" : "border-line bg-white"}`}>
-                {label}
-              </button>
-            );
-          })}
+        <div className="mt-1.5 w-full">
+          <Segmented label="Montos rápidos" tone="ink" fill value={activeChip}
+            options={chips.map(([label]) => ({ value: label, label }))}
+            onChange={(label) => setAmount(Math.floor(available * (chips.find(([l]) => l === label)?.[1] ?? 0)))} />
         </div>
-      </section>
+      </Enter>
 
-      <section aria-label="Destino" className="mt-8 flex flex-col gap-2.5">
+      <Enter i={2} as="section" className="mt-8 flex flex-col gap-2.5">
         <span className="text-sm font-semibold">¿A dónde lo mandás?</span>
         {destinations.map((d) => {
           const on = dest === d.id;
           return (
             <button key={d.id} type="button" aria-pressed={on} onClick={() => setDestination(d.id)}
-              className={`flex min-h-[72px] items-center gap-3.5 rounded-[18px] border bg-white px-4 py-3 text-left transition ${on ? "border-ink" : "border-line"}`}>
-              <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${on ? "bg-ink text-white" : "bg-surface text-ink-2"}`}>
+              className={`flex min-h-[72px] items-center gap-3.5 rounded-[18px] border bg-white px-4 py-3 text-left transition-[border-color,transform] duration-300 active:scale-[.98] ${on ? "border-ink" : "border-line"}`}>
+              <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors duration-300 ${on ? "bg-ink text-white" : "bg-surface text-ink-2"}`}>
                 <Icon name={d.icon} size={20} />
               </span>
               <span className="flex grow flex-col gap-0.5">
                 <span className="text-[15px] font-semibold">{d.title}</span>
                 <span className="text-[13px] text-muted">{d.sub} · <span className="font-mono text-xs">{shortAddress(d.addr!)}</span></span>
               </span>
-              <span aria-hidden="true" className={`flex size-5 items-center justify-center rounded-full border-2 ${on ? "border-ink" : "border-[#C8C8CE]"}`}>
-                {on && <span className="size-2.5 rounded-full bg-ink" />}
+              <span aria-hidden="true" className={`flex size-5 items-center justify-center rounded-full border-2 transition-colors duration-300 ${on ? "border-ink" : "border-[#C8C8CE]"}`}>
+                <span className={`size-2.5 rounded-full bg-ink transition-transform duration-500 ease-spring ${on ? "scale-100" : "scale-0"}`} />
               </span>
             </button>
           );
         })}
-      </section>
+      </Enter>
 
       <div className="grow" />
       {error && <div className="mb-3 mt-6"><ErrorNote>{error}</ErrorNote></div>}
@@ -116,6 +112,7 @@ export default function WithdrawPage() {
       </button>
       <p className="mt-3 text-center text-xs text-subtle">Solo retirás lo que ya ganaste. No es un adelanto.</p>
     </div>
+    </Page>
   );
 }
 
@@ -134,25 +131,30 @@ function Confirmed({ receipt, name, beloAddress, address, remaining }: {
   return (
     <div className="flex grow flex-col pb-[max(28px,env(safe-area-inset-bottom))]">
       <header className="flex h-11 justify-end">
-        <Link href="/worker" aria-label="Cerrar" className="flex size-11 items-center justify-center rounded-full border border-line"><Icon name="close" /></Link>
+        <Link href="/worker" transitionTypes={["nav-back"]} aria-label="Cerrar" className="flex size-11 items-center justify-center rounded-full border border-line transition-transform duration-500 ease-spring active:scale-90"><Icon name="close" /></Link>
       </header>
       <section role="status" className="mt-7 flex flex-col items-center gap-2.5 text-center">
-        <span className="mb-3.5 flex size-[76px] items-center justify-center rounded-full bg-ink text-white ring-2 ring-celeste ring-offset-4">
-          <Icon name="check" size={34} strokeWidth={2.4} />
+        <span className="relative mb-3.5 flex size-[76px] items-center justify-center">
+          <span aria-hidden="true" className="absolute inset-0 rounded-full border-2 border-celeste animate-ring" />
+          <span className="flex size-full items-center justify-center rounded-full bg-ink text-white animate-pop">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12.5l4.5 4.5L19 7.5" className="draw-check animate-draw" />
+            </svg>
+          </span>
         </span>
-        <span className="text-sm text-muted">{url ? "Confirmado en Arbitrum" : "Simulado"}</span>
-        <h1 className="tnum text-[40px] font-medium leading-[1.05] tracking-[-0.045em]">Retiraste {money(receipt.amount)}</h1>
-        <span className="text-[15px] text-ink-2">{toBelo ? "a tu cuenta de Belo" : "a tu wallet"} · {name}</span>
+        <Enter i={3} as="span" className="text-sm text-muted">{url ? "Confirmado en Arbitrum" : "Simulado"}</Enter>
+        <Enter i={4}><h1 className="tnum text-[40px] font-medium leading-[1.05] tracking-[-0.045em]">Retiraste {money(receipt.amount)}</h1></Enter>
+        <Enter i={5} as="span" className="text-[15px] text-ink-2">{toBelo ? "a tu cuenta de Belo" : "a tu wallet"} · {name}</Enter>
       </section>
 
-      <dl className="mt-8 animate-rise rounded-[22px] border border-line px-[18px] py-1.5">
-        {rows.map(([k, v]) => (
-          <div key={k} className="flex min-h-12 items-center justify-between border-b border-line-soft">
+      <dl className="mt-8 rounded-[22px] border border-line px-[18px] py-1.5">
+        {rows.map(([k, v], idx) => (
+          <div key={k} className="animate-enter flex min-h-12 items-center justify-between border-b border-line-soft" style={{ "--i": 7 + idx } as React.CSSProperties}>
             <dt className="text-sm text-muted">{k}</dt>
             <dd className="tnum text-sm font-medium">{v}</dd>
           </div>
         ))}
-        <div className="flex min-h-[52px] items-center justify-between">
+        <div className="animate-enter flex min-h-[52px] items-center justify-between" style={{ "--i": 10 } as React.CSSProperties}>
           <dt className="text-sm text-muted">Transacción</dt>
           <dd className="flex items-center gap-1">
             <span className="font-mono text-[13px] font-medium">{shortHash(receipt.txHash)}</span>
@@ -165,14 +167,14 @@ function Confirmed({ receipt, name, beloAddress, address, remaining }: {
           </dd>
         </div>
       </dl>
-      {!url && <div className="mt-3.5"><MockNotice /></div>}
+      {!url && <Enter i={11} className="mt-3.5"><MockNotice /></Enter>}
 
       <div className="grow" />
-      <div className="mt-8 flex flex-col gap-2.5">
+      <Enter i={12} className="mt-8 flex flex-col gap-2.5">
         {url && <a href={url} target="_blank" rel="noreferrer" className={buttonStyles.secondary}>Ver en Arbiscan <Icon name="out" size={16} /></a>}
-        <Link href="/worker" className={buttonStyles.primary}>Volver al inicio</Link>
+        <Link href="/worker" transitionTypes={["nav-back"]} className={buttonStyles.primary}>Volver al inicio</Link>
         <p className="tnum mt-1 text-center text-[13px] text-muted">Te quedan {money(remaining, 2)} disponibles, y siguen sumando.</p>
-      </div>
+      </Enter>
     </div>
   );
 }

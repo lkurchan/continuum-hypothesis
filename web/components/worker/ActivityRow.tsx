@@ -20,11 +20,11 @@ const tone: Record<Direction, { icon: string; amount: string; name: "out" | "in"
   neutral: { icon: "bg-surface text-muted", amount: "text-subtle", name: "flow" },
 };
 
-export function ActivityRow({ activity, payerName, showHash = false }: { activity: Activity; payerName: string; showHash?: boolean }) {
+export function ActivityRow({ activity, payerName, showHash = false, i = 0 }: { activity: Activity; payerName: string; showHash?: boolean; i?: number }) {
   const d = describe(activity, payerName);
   const t = tone[d.direction];
   return (
-    <div className="flex min-h-[58px] items-center gap-3 border-b border-line-soft last:border-0">
+    <div className="animate-enter flex min-h-[58px] items-center gap-3 border-b border-line-soft last:border-0" style={{ "--i": i } as React.CSSProperties}>
       <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${t.icon}`}>
         <Icon name={t.name} size={16} />
       </span>

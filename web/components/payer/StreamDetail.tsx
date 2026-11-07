@@ -54,7 +54,7 @@ export function StreamDetail({ stream, workerName, now }: { stream: StreamView; 
   });
 
   return (
-    <aside aria-label="Detalle del pago" className="flex flex-col gap-5 rounded-3xl border border-line bg-white p-5">
+    <aside aria-label="Detalle del pago" className="animate-enter flex flex-col gap-5 rounded-3xl border border-line bg-white p-5 lg:sticky lg:top-24" style={{ "--i": 4 } as React.CSSProperties}>
       <div className="flex items-center justify-between gap-3">
         <span className="flex flex-col">
           <span className="text-base font-semibold">{workerName}</span>
@@ -98,7 +98,7 @@ export function StreamDetail({ stream, workerName, now }: { stream: StreamView; 
       )}
 
       {confirming && (
-        <div role="alertdialog" aria-label="Confirmar cancelación" className="flex flex-col gap-3 rounded-2xl bg-danger-soft/60 p-4">
+        <div role="alertdialog" aria-label="Confirmar cancelación" className="animate-enter flex flex-col gap-3 rounded-2xl bg-danger-soft/60 p-4">
           <span className="text-sm font-semibold">¿Cancelar el pago de {first}?</span>
           <div className="tnum flex flex-col gap-1.5 text-sm">
             <span className="flex justify-between"><span className="text-ink-2">{first} se queda con</span><strong>{money(keep, 2)}</strong></span>
@@ -111,9 +111,9 @@ export function StreamDetail({ stream, workerName, now }: { stream: StreamView; 
         </div>
       )}
 
-      {error && <ErrorNote>{error}</ErrorNote>}
+      {error && <div className="animate-enter"><ErrorNote>{error}</ErrorNote></div>}
       {tx && (
-        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-surface px-4 py-3 text-sm">
+        <div key={tx.hash} role="status" className="animate-enter flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-surface px-4 py-3 text-sm">
           <span className="font-medium">{tx.message}</span>
           <Hash hash={tx.hash} />
         </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/kit";
+import { Enter, Page } from "@/components/ui/motion";
 import { useWorker } from "@/components/worker/WorkerContext";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -57,20 +58,21 @@ export default function CopilotPage() {
   };
 
   return (
+    <Page>
     <div className="flex min-h-0 grow flex-col">
       <header className="flex h-11 shrink-0 items-center gap-2.5">
-        <h1 className="text-[28px] font-semibold tracking-[-0.035em]">Copiloto</h1>
+        <Enter><h1 className="text-[28px] font-semibold tracking-[-0.035em]">Copiloto</h1></Enter>
         <span className="rounded-md border border-line px-[7px] py-[3px] text-[11px] font-semibold tracking-[0.04em] text-ink-2">BETA</span>
       </header>
 
       <div className="flex grow flex-col gap-3 py-5">
         {messages.length === 0 ? (
           <div className="flex grow flex-col justify-end gap-3">
-            <Bubble role="assistant">Hola{user ? `, ${user.name.split(" ")[0]}` : ""}. Te ayudo a organizar lo que vas ganando. ¿Qué querés saber?</Bubble>
+            <Bubble role="assistant" i={1}>Hola{user ? `, ${user.name.split(" ")[0]}` : ""}. Te ayudo a organizar lo que vas ganando. ¿Qué querés saber?</Bubble>
             <div className="flex flex-col items-start gap-2 pl-[38px]">
-              {suggestions.map((s) => (
-                <button key={s} type="button" onClick={() => send(s)}
-                  className="rounded-2xl border border-line px-3.5 py-2 text-left text-[13px] text-ink-2 transition hover:bg-page">
+              {suggestions.map((s, idx) => (
+                <button key={s} type="button" onClick={() => send(s)} style={{ "--i": 3 + idx } as React.CSSProperties}
+                  className="animate-enter rounded-2xl border border-line px-3.5 py-2 text-left text-[13px] text-ink-2 transition-[background-color,transform] duration-300 hover:bg-page active:scale-[.97]">
                   {s}
                 </button>
               ))}
@@ -93,15 +95,16 @@ export default function CopilotPage() {
         </button>
       </form>
     </div>
+    </Page>
   );
 }
 
-function Bubble({ role, children }: { role: Message["role"]; children: React.ReactNode }) {
+function Bubble({ role, children, i = 0 }: { role: Message["role"]; children: React.ReactNode; i?: number }) {
   if (role === "user") {
-    return <p className="ml-10 self-end whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-ink px-3.5 py-2.5 text-sm leading-normal text-white">{children}</p>;
+    return <p className="animate-enter ml-10 origin-bottom-right self-end whitespace-pre-wrap rounded-[18px_18px_4px_18px] bg-ink px-3.5 py-2.5 text-sm leading-normal text-white">{children}</p>;
   }
   return (
-    <div className="mr-6 flex items-start gap-2.5">
+    <div className="animate-enter mr-6 flex items-start gap-2.5" style={{ "--i": i } as React.CSSProperties}>
       <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-[9px] bg-ink">
         <svg width="16" height="16" viewBox="0 0 28 28"><path d="M6 14h9.5" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" /><circle cx="20" cy="14" r="3" fill="#6CB4EE" /></svg>
       </span>
@@ -113,7 +116,7 @@ function Bubble({ role, children }: { role: Message["role"]; children: React.Rea
 function Typing() {
   return (
     <span className="inline-flex gap-1 py-1" aria-label="Escribiendo">
-      {[0, 1, 2].map((i) => <span key={i} className="size-1.5 animate-pulse rounded-full bg-subtle" style={{ animationDelay: `${i * 150}ms` }} />)}
+      {[0, 1, 2].map((i) => <span key={i} className="size-1.5 rounded-full bg-subtle animate-typing" style={{ animationDelay: `${i * 160}ms` }} />)}
     </span>
   );
 }

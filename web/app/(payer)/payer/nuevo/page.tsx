@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { api } from "@/components/ui/api";
 import { durationLabel, groupWhole, money, parseWhole } from "@/components/ui/format";
-import { Avatar, ErrorNote, Hash, Icon, Segmented, buttonStyles } from "@/components/ui/kit";
+import { Avatar, ErrorNote, Hash, Icon, buttonStyles } from "@/components/ui/kit";
+import { Enter, Page, Segmented } from "@/components/ui/motion";
 import { usePayer } from "@/components/payer/PayerContext";
 
 const periods = [
@@ -59,20 +60,21 @@ export default function NewPayment() {
   const reset = <T,>(set: (v: T) => void) => (v: T) => { set(v); setDone(null); };
 
   return (
+    <Page>
     <div className="flex flex-col gap-7">
-      <div className="flex flex-col gap-2">
-        <Link href="/payer" className="inline-flex w-fit items-center gap-1.5 text-sm text-muted hover:text-ink"><Icon name="back" size={16} />Panel</Link>
+      <Enter className="flex flex-col gap-2">
+        <Link href="/payer" transitionTypes={["nav-back"]} className="inline-flex w-fit items-center gap-1.5 text-sm text-muted hover:text-ink"><Icon name="back" size={16} />Panel</Link>
         <h1 className="text-[30px] font-semibold tracking-[-0.04em]">Nuevo pago</h1>
-      </div>
+      </Enter>
 
       <div className="grid items-start gap-5 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-5">
-          <Step n={1} title="Trabajadores" aside={`${n} de ${workers.length}`}>
+          <Step i={1} n={1} title="Trabajadores" aside={`${n} de ${workers.length}`}>
             <div className="flex flex-col">
               {workers.map((w) => {
                 const on = isOn(w.id);
                 return (
-                  <div key={w.id} className={`flex items-center gap-3 border-b border-line-soft py-3 last:border-0 ${on ? "" : "opacity-50"}`}>
+                  <div key={w.id} className={`flex items-center gap-3 border-b border-line-soft py-3 transition-opacity duration-300 last:border-0 ${on ? "" : "opacity-50"}`}>
                     <input id={`w-${w.id}`} type="checkbox" checked={on} className="size-[18px] accent-ink"
                       onChange={() => { setPicked({ ...picked, [w.id]: !on }); setDone(null); }} />
                     <label htmlFor={`w-${w.id}`} className="flex grow cursor-pointer items-center gap-3">
@@ -91,17 +93,17 @@ export default function NewPayment() {
             </div>
           </Step>
 
-          <Step n={2} title="Duración">
+          <Step i={2} n={2} title="Duración">
             <Segmented label="Duración" value={period} onChange={reset(setPeriod)} options={periods} />
           </Step>
 
-          <Step n={3} title="Fondeo inicial">
+          <Step i={3} n={3} title="Fondeo inicial">
             <Segmented label="Porcentaje a depositar ahora" value={fund} onChange={reset(setFund)}
               options={[25, 50, 100].map((v) => ({ value: v, label: `${v} %` }))} />
           </Step>
         </div>
 
-        <aside aria-label="Resumen" className="flex flex-col gap-5 rounded-3xl border border-line bg-white p-5 lg:sticky lg:top-24">
+        <aside aria-label="Resumen" className="animate-enter flex flex-col gap-5 rounded-3xl border border-line bg-white p-5 lg:sticky lg:top-24" style={{ "--i": 2 } as React.CSSProperties}>
           <div className="flex flex-col gap-1">
             <span className="text-[13px] text-muted">Depositás ahora</span>
             <span className="tnum text-[34px] font-medium leading-none tracking-[-0.045em]">{money(deposit)}</span>
@@ -116,28 +118,29 @@ export default function NewPayment() {
           </dl>
 
           {done ? (
-            <div role="status" className="flex flex-col gap-3 rounded-2xl bg-celeste-soft p-4">
+            <div role="status" className="animate-enter flex flex-col gap-3 rounded-2xl bg-celeste-soft p-4">
               <span className="flex items-center gap-2 text-sm font-semibold text-celeste-ink">
-                <Icon name="check" size={16} /> {done.count === 1 ? "Pago creado" : `${done.count} pagos creados`}
+                <span className="animate-pop"><Icon name="check" size={16} /></span> {done.count === 1 ? "Pago creado" : `${done.count} pagos creados`}
               </span>
               <Hash hash={done.hash} />
-              <Link href="/payer" className={buttonStyles.small}>Ver en el panel</Link>
+              <Link href="/payer" transitionTypes={["nav-back"]} className={buttonStyles.small}>Ver en el panel</Link>
             </div>
           ) : (
             <button type="button" onClick={create} disabled={!n || busy} className={buttonStyles.primary}>
               {busy ? "Firmando en Arbitrum…" : !n ? "Elegí al menos uno" : n === 1 ? "Crear pago" : `Crear ${n} pagos`}
             </button>
           )}
-          {error && <ErrorNote>{error}</ErrorNote>}
+          {error && <div className="animate-enter"><ErrorNote>{error}</ErrorNote></div>}
         </aside>
       </div>
     </div>
+    </Page>
   );
 }
 
-function Step({ n, title, aside, children }: { n: number; title: string; aside?: string; children: React.ReactNode }) {
+function Step({ n, i, title, aside, children }: { n: number; i: number; title: string; aside?: string; children: React.ReactNode }) {
   return (
-    <section aria-label={title} className="flex flex-col gap-4 rounded-3xl border border-line bg-white p-5">
+    <section aria-label={title} className="animate-enter flex flex-col gap-4 rounded-3xl border border-line bg-white p-5" style={{ "--i": i } as React.CSSProperties}>
       <div className="flex items-center gap-3">
         <span className="flex size-6 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white">{n}</span>
         <h2 className="text-base font-semibold">{title}</h2>
