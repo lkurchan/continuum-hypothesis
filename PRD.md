@@ -203,7 +203,7 @@ Regla general: cada módulo toca **solo sus carpetas**. Las interfaces de la sec
 La base local y Supabase remoto están validados; Vercel sigue pendiente. Ver `docs/SETUP.md` para comandos, configuración de servicios y arranque de branches.
 
 ### Tareas operativas (cualquiera, **apenas arranca el día**: son las bloqueantes reales)
-- [ ] Pedir ARGt en Arbitrum a los mentores de Twin (o comprarlo con USDT0 en el pool de Curve). Conseguir lo suficiente para montos creíbles.
+- [x] Conseguir ARGt en Arbitrum: fondeo de 3371,33 ARGt verificado en la plataforma antes de B6.
 - [x] Conseguir ETH en Arbitrum para gas y repartirlo entre las wallets demo (deployer, pagador y trabajadores).
 - [ ] Confirmar con Belo o los mentores que una dirección de Belo recibe ARGt en Arbitrum, y anotar esa dirección.
 - [ ] Conseguir una API key de Anthropic.
@@ -214,7 +214,7 @@ La base local y Supabase remoto están validados; Vercel sigue pendiente. Ver `d
 - [x] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
 - [ ] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**. Publicar la dirección en el canal del equipo.
 - [x] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
-- [ ] A5. Después: ayudar a B con la integración y sembrar los streams para la demo.
+- [x] A5. Integración con B y primer seed real por API comprobados en B6. Renovar el horario del lote para el ensayo/pitch.
 
 ### Módulo B — Backend y chain (`web/lib/domain`, `web/lib/chain`, `web/lib/db`, `web/app/api/**`, `supabase/`)
 - [x] B1. `vesting.ts` con tests, espejo de la fórmula del contrato.
@@ -222,9 +222,9 @@ La base local y Supabase remoto están validados; Vercel sigue pendiente. Ver `d
 - [x] B3. Migraciones de Supabase y seed de usuarios demo.
 - [x] B4. Rutas de la API contra el gateway y la base, con tests de la lógica de cada ruta.
 - [x] B5. `ViemStreamGateway`: approve y create, top-up, withdrawTo y cancel, con espera de receipt y lectura de eventos para obtener los ids.
-- [ ] B6. Prueba de punta a punta en mainnet: el **primer hash real**, que se guarda para el README.
+- [x] B6. Prueba de punta a punta en mainnet: lote, top-up, retiro, cancelación y remanente; hashes en README y `docs/B6.md`.
 
-B1–B5 están implementados y probados con demo local, proveedores simulados y el contrato de A en Anvil. El ABI exportado está integrado. El contrato está desplegado y se verificó su bytecode. Supabase remoto, RPC, wallets y las lecturas HTTP reales están validados. B6 sigue pendiente de fondeo de ARGt y transacciones reales; las claves y gas de las wallets demo se comprobaron localmente. Ver `docs/OPERATIONS.md`. Ver `docs/BACKEND.md` y `docs/CI.md`.
+B1–B6 están implementados y verificados. El contrato está desplegado y se contrastó su bytecode. B6 ejecutó el flujo real por API con Supabase: depositó 2,2 ARGt, retiró 0,3 ARGt a worker1 y devolvió 0,9 ARGt al pagador; quedó 1 ARGt en el stream 2. Receipts, balances e historial por participante comprobados. Ver `docs/B6.md`, `docs/OPERATIONS.md`, `docs/BACKEND.md` y `docs/CI.md`. Vercel y el destino Belo siguen pendientes.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
 - [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
@@ -241,8 +241,8 @@ B1–B5 están implementados y probados con demo local, proveedores simulados y 
 - [ ] D4 (prioridad baja). Agente con el AI SDK y herramientas `getBalance`, `withdrawTo` y `createRule`. Las reglas se guardan en `agent_rules` y se ejecutan con un botón "Ejecutar reglas de hoy" (sin cron), con una explicación por cada movimiento.
 
 ### Codex 1 y 2
-- [ ] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.
-- [x] Script de seed de streams demo y modo mock con datos lindos. El seed real por API está listo; su ejecución espera ARGt.
+- [x] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.
+- [x] Script de seed de streams demo y modo mock con datos lindos. Seed real por API ejecutado en B6; preparar un horario nuevo para el próximo ensayo.
 - [x] Review de los PRs de A y B (seguridad del contrato y manejo de claves).
 - [ ] Configuración de Vercel y verificación del deploy.
 

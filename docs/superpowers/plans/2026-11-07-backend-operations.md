@@ -8,3 +8,6 @@
 6. Actualizar README y guía B6 con comandos, deployment confirmado y pendientes concretos.
 7. Validar, publicar PR y seguir CI hasta su resultado.
 8. Al recibir Supabase: validar tablas/RPC, aplicar wallets de forma idempotente, verificar lecturas HTTP reales y preparar el seed sin enviar fondos; registrar evidencia y bloqueos restantes.
+9. Tras confirmar fondeo y continuación autorizada: ejecutar B6 acotado con journal, verificar receipts/balances/historial, registrar hashes y preparar las instrucciones de Vercel.
+
+Resultado del paso 9: B6 completado a las 12:16 ART del 7/11/2026; evidencia en `docs/B6.md`. Guía entregable para el responsable de Vercel en `docs/VERCEL.md`. El despliegue remoto y la compatibilidad Belo siguen pendientes.

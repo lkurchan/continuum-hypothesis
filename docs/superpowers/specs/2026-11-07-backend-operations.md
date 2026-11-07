@@ -12,7 +12,13 @@ Agregar herramientas operativas reproducibles para configurar y comprobar B6, si
 - Smoke HTTP reproducible: servidor de producción mock aislado, flujo crear/fondear/retirar/cancelar/retirar remanente y comprobación de actividad. Nunca usar las claves ni servicios reales aunque existan `.env.local`.
 - Verificación HTTP del modo real sin transacciones: consultar usuarios, streams e historial para las tres identidades; comprobar correspondencia con las wallets locales, aislamiento por participante y ausencia de campos privados. La herramienta solo hace GET y no cambia `.env.local`. Preparar además el seed con dry-run sobre esa misma API.
 
-No ejecutar transferencias mainnet durante la preparación. El modo real necesita Supabase configurado y ARGt/gas; informar lo pendiente con evidencia. Las lecturas remotas y la configuración del proyecto demo solicitado sí forman parte del trabajo.
+La preparación no envía transferencias mainnet. Una vez confirmado el fondeo y solicitada la continuación de B6, ejecutar el flujo acotado descrito abajo mediante la API y conservar evidencia. El modo real necesita Supabase configurado y ARGt/gas; informar lo pendiente con evidencia. Las lecturas remotas y la configuración del proyecto demo solicitado sí forman parte del trabajo.
+
+## Ejecución B6 autorizada tras el fondeo
+
+El usuario indicó que llegó ARGt y pidió avanzar con el trabajo pendiente. Comprobar token/red, balances, contrato, usuarios y ausencia de seeds anteriores antes de enviar. Lote previsto: dos streams de total 10 ARGt y depósito inicial 1 ARGt por trabajador, duración 900 segundos. Top-up de 0,2 ARGt al primer stream, retiro de 0,1 ARGt a la wallet de worker1, cancelación del primer stream y retiro de su remanente. Fondeo agregado máximo 2,2 ARGt; el gas se paga con el ETH demo. No enviar a Belo ni a destinatarios ajenos a las wallets demo.
+
+Registrar en un journal local cada mutación como pendiente antes de enviarla, y guardar hash/receipt/resultado al confirmarse. Si queda un envío ambiguo, detenerse para consultar la chain; nunca repetirlo automáticamente. Verificar eventos, montos, balances, metadata/historial para ambos participantes y aislamiento del otro trabajador. Conservar evidencia pública de los hashes en el README y un informe B6; no guardar claves ni URLs RPC privadas. Validar la configuración de Vercel y entregar instrucciones para el integrante del equipo que realizará el despliegue.
 
 ## Validación
 

@@ -4,7 +4,7 @@ Pagos por segundo para freelancers y trabajadores de plataformas, en pesos oncha
 
 Ver [PRD.md](PRD.md) para alcance, arquitectura e interfaces, y [docs/SETUP.md](docs/SETUP.md) para instalar la base y preparar Supabase y Vercel.
 
-Contrato desplegado en Arbitrum One y backend funcional en modo mock. El código desplegado se contrastó con el bytecode del repositorio; el flujo con ARGt pasó en un fork local. Supabase remoto y las wallets demo están configurados y sus lecturas HTTP reales fueron verificadas. El primer flujo del producto con transferencias reales (B6) y el deploy web siguen pendientes. ARGt es un medio de pago, **sin rendimiento**.
+Contrato desplegado en Arbitrum One y backend verificado con ARGt real: creación en lote, top-up, retiro, cancelación con reembolso y retiro del remanente. Supabase conserva metadata e historial y los balances onchain cierran. Ver [evidencia B6](docs/B6.md). El deploy web sigue pendiente; la [guía de Vercel](docs/VERCEL.md) incluye configuración y protección de acceso. ARGt es un medio de pago, **sin rendimiento**.
 
 ## Chain, token y contrato
 
@@ -14,7 +14,8 @@ Contrato desplegado en Arbitrum One y backend funcional en modo mock. El código
 | ARGt (18 decimales) | [`0x59863989d080B22476DB95656d0C3CC18be92214`](https://arbiscan.io/token/0x59863989d080B22476DB95656d0C3CC18be92214) |
 | ContinuumStreams | [`0xB98D30CC1e8D234A6234569848366fE30F3fF799`](https://arbiscan.io/address/0xB98D30CC1e8D234A6234569848366fE30F3fF799#code) |
 | Deploy, bloque 522100998 | [`0x9bea…bc6b`](https://arbiscan.io/tx/0x9bea2cb4b05d7be7d3fc3d53db78126c005eb03e40eb1fadf10b46d63c37bc6b) |
-| Primer pago/retiro real de ARGt | Pendiente B6; el deploy no sustituye esta evidencia |
+| Lote real: streams 1 y 2 | [0x9f2f…0dc2](https://arbiscan.io/tx/0x9f2f71b543d3cbfb9a2c62da8049264da1d9226ed1026039d255fe699e520dc2) |
+| Primer retiro real: 0,1 ARGt | [0x074c…8328](https://arbiscan.io/tx/0x074c1daf4a25ed0369a566bdbe497662ff7d238d9890a11730a7abfeaf3f8328) |
 
 ## Correr la demo
 

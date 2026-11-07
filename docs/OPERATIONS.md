@@ -81,8 +81,8 @@ El smoke inicia su propio servidor de producción en loopback y fuerza `CHAIN_MO
 
 - Contrato desplegado, bytecode igual al repositorio y prueba de ARGt real sobre fork aprobada.
 - Las tres claves locales son válidas, corresponden a wallets distintas y las wallets tienen ETH.
-- La plataforma tenía 0 ARGt al ejecutar el diagnóstico; B6 sigue pendiente de fondeo.
+- Fondeo confirmado: 3371,33 ARGt en la plataforma antes de B6; quedaron 3370,03 ARGt después del flujo.
 - Supabase remoto validado: cuatro tablas accesibles, RPC publicado y ejecución de lote vacío aprobada sin crear filas. Las tres wallets ya coincidían con las claves; la sincronización fue idempotente y no cambió direcciones.
-- API real local: usuarios, streams e historial de las tres identidades aprobados; todavía no hay streams ni actividad. Seed preparado en dry-run para dos trabajadores, depósito de 1 ARGt por trabajador (2 ARGt total), sin enviar transacciones. Regenerar los timestamps al ejecutarlo.
+- B6 completado por API real local: lote de dos streams (2 ARGt), top-up (0,2), retiro (0,1), cancelación (reembolso 0,9; devengado 0,3) y retiro remanente (0,2). Receipts, eventos, balances y las seis actividades verificados. El stream 1 quedó cancelado y el 2 conserva 1 ARGt. Ver [B6.md](B6.md) para los hashes y horarios. Los journals quedaron verificados; no eliminarlos para repetir el seed.
 - La clave pública no estaba configurada: la comprobación remota de acceso anon queda pendiente; RLS/permisos están cubiertos por la suite SQL de CI. Esto no bloquea el backend server-side.
-- El proyecto web en Vercel sigue pendiente. El mock en memoria sirve para una única instancia local; instancias serverless distintas no comparten ese estado.
+- El proyecto web en Vercel sigue pendiente; [VERCEL.md](VERCEL.md) contiene las instrucciones para el responsable. El mock en memoria sirve para una única instancia local; instancias serverless distintas no comparten ese estado.

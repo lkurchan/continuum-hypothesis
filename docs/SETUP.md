@@ -48,7 +48,7 @@ Importar `lkurchan/continuum-hypothesis` desde GitHub con estos ajustes:
 
 Node.js 24 está entre las [versiones soportadas por Vercel](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions); `web/package.json` fija la misma versión mayor para el despliegue.
 
-Cargar las variables de `web/.env.example` para Production y Preview. El scaffold compila sin credenciales; mantener `CHAIN_MODE=mock` hasta integrar los módulos. Las claves privadas y la service-role key nunca llevan el prefijo `NEXT_PUBLIC_`. La integración con el agente y `ANTHROPIC_API_KEY` quedan para una tarea posterior.
+Seguir [VERCEL.md](VERCEL.md) para el despliegue real: protección de acceso, variables concretas, duración de Functions y validación. La API custodial demo no tiene autenticación propia: activar protección para todos los deployments antes de cargar claves reales. Las claves privadas y la service-role key nunca llevan el prefijo `NEXT_PUBLIC_`. La integración con el agente y `ANTHROPIC_API_KEY` quedan para una tarea posterior.
 
 ## Validación
 
