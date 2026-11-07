@@ -63,7 +63,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span className="text-[17px] font-semibold tracking-[-0.03em]">continuum</span>
           </Link>
           <div className="flex items-center gap-2.5">
-            <Link href="/entrar" className="text-xs text-muted hover:text-ink">Vistas por rol</Link>
+            <Link href="/entrar" className="text-xs text-muted hover:text-ink">Cambiar cuenta</Link>
             <NetworkChip />
             <span role="img" aria-label={`Perfil de ${ACCOUNT_NAME}`} className="flex size-9 items-center justify-center rounded-[10px] bg-ink text-celeste-dark ring-1 ring-white/10">
               <Icon name="building" size={20} strokeWidth={1.7} />
@@ -84,7 +84,7 @@ function Gate({ message }: { message: string }) {
         <ErrorNote>{message}</ErrorNote>
         <div className="flex gap-2">
           <Link href="/login?next=%2Fdemo" className="inline-flex h-11 items-center rounded-xl bg-ink px-4 text-sm font-semibold text-white">Ingresar</Link>
-          <Link href="/entrar" className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold">Vistas por rol</Link>
+          <Link href="/entrar" className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold">Cambiar cuenta</Link>
         </div>
       </div>
     </Shell>
