@@ -5,7 +5,7 @@ import { DomainError, requireCondition } from "./errors";
 import type { Activity, ActivityKind, Amount, DemoUser, StreamView } from "./types";
 import { validatePeriod } from "./vesting";
 
-export type CreateInput = { payerId: string; items: { workerId: string; totalAmount: Amount; initialDeposit: Amount }[]; start: number; end: number };
+export type CreateInput = { payerId: string; items: { workerId: string; totalAmount: Amount; initialDeposit: Amount; label?: string }[]; start: number; end: number };
 
 export class StreamService {
   private queue: Promise<unknown> = Promise.resolve();
@@ -66,11 +66,12 @@ export class StreamService {
         const totalAmount = positiveAmount(item.totalAmount);
         const initialDeposit = normalizeAmount(item.initialDeposit);
         requireCondition(compareAmounts(initialDeposit, totalAmount) <= 0, "El fondeo excede el total.");
-        return { worker, totalAmount, initialDeposit };
+        const label = item.label?.trim().slice(0, 80) || undefined;
+        return { worker, totalAmount, initialDeposit, label };
       }));
-      const result = await this.gateway.createStreams(payer, items, input.start, input.end);
+      const result = await this.gateway.createStreams(payer, items.map(({ worker, totalAmount, initialDeposit }) => ({ worker, totalAmount, initialDeposit })), input.start, input.end);
       requireCondition(result.streamIds.length === items.length, `La operación ${result.txHash} devolvió una cantidad inesperada de streams; revisá el hash antes de repetir.`, 503);
-      const records = result.streamIds.map((id, i) => ({ id, payerId: payer.id, workerId: items[i].worker.id,
+      const records = result.streamIds.map((id, i) => ({ id, payerId: payer.id, workerId: items[i].worker.id, ...(items[i].label ? { label: items[i].label } : {}),
         createdTx: result.txHash, createdAt: new Date(this.now() * 1000).toISOString() }));
       const activity = result.streamIds.map((id, i) => this.activityRow(id, "create", items[i].initialDeposit, result.txHash, payer.id));
       await this.saveAfterTransaction(result.txHash, () => this.repo.recordCreation(records, activity));

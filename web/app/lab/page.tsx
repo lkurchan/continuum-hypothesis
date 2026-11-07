@@ -9,7 +9,7 @@ import type { DemoUser, StreamView } from "@/lib/domain/types";
 type Entry = { id: number; at: string; label: string; ok: boolean; detail: string; hash?: string };
 type Mode = "mock" | "real" | null;
 
-const EXPRESS = 900;
+const EXPRESS = 3600;
 const AMOUNT = 18_000;
 const nowSec = () => Math.floor(Date.now() / 1000);
 const stamp = () => new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -49,7 +49,7 @@ export default function LabPage() {
   }, [worker, payer]);
 
   const lastActive = useCallback(async (): Promise<StreamView> => {
-    if (!payer) throw new Error("No hay pagador demo.");
+    if (!payer) throw new Error("No hay cliente demo.");
     const streams = (await api.streams(payer.id)).filter((s) => !s.canceledAt && nowSec() < s.end);
     const last = streams.sort((a, b) => Number(b.id) - Number(a.id))[0];
     if (!last) throw new Error("No hay pagos activos. Creá uno primero.");
@@ -71,44 +71,44 @@ export default function LabPage() {
   };
 
   const createFor = (targets: DemoUser[]) => async () => {
-    if (!payer) throw new Error("No hay pagador demo.");
+    if (!payer) throw new Error("No hay cliente demo.");
     const start = nowSec();
-    const items = targets.map((w) => ({ workerId: w.id, totalAmount: String(AMOUNT), initialDeposit: String(AMOUNT / 2) }));
+    const items = targets.map((w) => ({ workerId: w.id, totalAmount: String(AMOUNT), initialDeposit: String(AMOUNT / 4), label: "Logística de última milla" }));
     const r = await api.create(payer.id, items, start, start + EXPRESS);
-    return { detail: `${r.streamIds.length === 1 ? "Pago" : `${r.streamIds.length} pagos`} de ${money(AMOUNT)} en 15 min, 50 % fondeado`, hash: r.txHash };
+    return { detail: `${r.streamIds.length === 1 ? "Acuerdo" : `${r.streamIds.length} acuerdos`} de ${money(AMOUNT)} por 1 hora, primer tramo del 25 %`, hash: r.txHash };
   };
 
   const scenarios: { label: string; hint: string; action: () => Promise<{ detail: string; hash?: string }>; disabled?: boolean }[] = [
-    { label: `Pago exprés a ${worker?.name.split(" ")[0] ?? "trabajador"}`, hint: "15 min · $18.000 · 50 %", action: createFor(worker ? [worker] : []), disabled: !worker },
-    { label: "Pago exprés a todos", hint: "Un lote, una transacción", action: createFor(workers), disabled: !workers.length },
+    { label: `Acuerdo con ${worker?.name ?? "proveedor"}`, hint: "1 hora · $18.000 · primer tramo 25 %", action: createFor(worker ? [worker] : []), disabled: !worker },
+    { label: "Acuerdo con todos los proveedores", hint: "Un lote, una transacción", action: createFor(workers), disabled: !workers.length },
     {
-      label: "Recargar el último pago", hint: "+25 % del total",
+      label: "Fondear un tramo del último acuerdo", hint: "+25 % del precio",
       action: async () => {
         const s = await lastActive();
         const room = Number(s.totalAmount) - Number(s.deposited);
         const amount = Math.min(Math.floor(Number(s.totalAmount) / 4), Math.floor(room));
-        if (amount <= 0) throw new Error("El último pago ya está fondeado al 100 %.");
+        if (amount <= 0) throw new Error("El último acuerdo ya está fondeado al 100 %.");
         const r = await api.topUp(payer!.id, s.id, String(amount));
-        return { detail: `Pago #${s.id} +${money(amount)}`, hash: r.txHash };
+        return { detail: `Acuerdo #${s.id} +${money(amount)}`, hash: r.txHash };
       },
     },
     {
-      label: `${worker?.name.split(" ")[0] ?? "Trabajador"} retira la mitad`, hint: "A su wallet", disabled: !worker,
+      label: `${worker?.name ?? "Proveedor"} cobra la mitad`, hint: "A su wallet", disabled: !worker,
       action: async () => {
         const streams = await api.streams(worker!.id);
         const s = streams.map((x) => ({ x, a: liveAvailable(x, nowSec()) })).sort((p, q) => q.a - p.a)[0];
         const amount = s ? Math.floor(s.a / 2) : 0;
         if (!s || amount < 1) throw new Error("No tiene saldo disponible para retirar.");
         const r = await api.withdraw(worker!.id, s.x.id, String(amount), "wallet");
-        return { detail: `Pago #${s.x.id} −${money(amount)}`, hash: r.txHash };
+        return { detail: `Acuerdo #${s.x.id} −${money(amount)}`, hash: r.txHash };
       },
     },
     {
-      label: "Cancelar el último pago", hint: "Lo ganado queda, el resto vuelve",
+      label: "Cancelar el último acuerdo", hint: "Lo devengado queda, el resto vuelve",
       action: async () => {
         const s = await lastActive();
         const r = await api.cancel(payer!.id, s.id);
-        return { detail: `Pago #${s.id}: vuelven ${money(r.refunded, 2)}`, hash: r.txHash };
+        return { detail: `Acuerdo #${s.id}: vuelven ${money(r.refunded, 2)}`, hash: r.txHash };
       },
     },
   ];
@@ -130,13 +130,13 @@ export default function LabPage() {
         </span>
       </header>
 
-      <div className="grid grow gap-6 p-6 xl:grid-cols-[320px_auto_1fr]">
+      <div className="grid grow gap-6 p-6 xl:grid-cols-[300px_1fr]">
         <aside className="flex flex-col gap-4">
           {error && <ErrorNote>{error}</ErrorNote>}
-          {mode === "real" && <ErrorNote>Los escenarios automáticos solo están disponibles en mock. Para operar con fondos reales, usá los formularios del pagador y del trabajador.</ErrorNote>}
+          {mode === "real" && <ErrorNote>Los escenarios automáticos solo están disponibles en mock. Para operar con fondos reales, usá los formularios del cliente y del proveedor.</ErrorNote>}
 
           <label className="flex flex-col gap-1.5 text-[13px] text-muted">
-            Celular muestra a
+            Vista del proveedor
             <select value={workerId} onChange={(e) => setWorkerId(e.target.value)}
               className="h-11 rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink">
               {workers.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
@@ -173,17 +173,18 @@ export default function LabPage() {
           </section>
         </aside>
 
-        <section aria-label="Vista del trabajador" className="flex flex-col items-center gap-2">
-          <span className="text-xs text-subtle">Trabajador · /worker</span>
-          <iframe key={`w${frames}`} src="/worker" title="Vista del trabajador"
-            className="h-[844px] w-[390px] shrink-0 rounded-[44px] border-[10px] border-ink bg-white shadow-xl" />
-        </section>
-
-        <section aria-label="Vista del pagador" className="flex min-w-0 flex-col gap-2">
-          <span className="text-xs text-subtle">Pagador · /payer</span>
-          <iframe key={`p${frames}`} src="/payer" title="Vista del pagador"
-            className="h-[844px] w-full min-w-[640px] rounded-3xl border border-line bg-white shadow-sm" />
-        </section>
+        <div className="grid min-w-0 gap-6 2xl:grid-cols-2">
+          <section aria-label="Vista del proveedor" className="flex min-w-0 flex-col gap-2">
+            <span className="text-xs text-subtle">Proveedor · /worker</span>
+            <iframe key={`w${frames}`} src="/worker" title="Vista del proveedor"
+              className="h-[760px] w-full rounded-3xl border border-line bg-white shadow-sm" />
+          </section>
+          <section aria-label="Vista del cliente" className="flex min-w-0 flex-col gap-2">
+            <span className="text-xs text-subtle">Cliente · /payer</span>
+            <iframe key={`p${frames}`} src="/payer" title="Vista del cliente"
+              className="h-[760px] w-full rounded-3xl border border-line bg-white shadow-sm" />
+          </section>
+        </div>
       </div>
     </div>
   );

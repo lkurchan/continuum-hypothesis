@@ -71,7 +71,7 @@ it.each(["worker1", "platform"])("streams account context for %s without moving 
   expect(complete).toHaveBeenCalledOnce();
   const input = complete.mock.calls[0][0];
   expect(input).toMatchObject({ model: "test-model", stream: true });
-  expect(input.messages[1].content).toContain(id === "platform" ? "Proveedores disponibles" : "Disponible para retirar ahora");
+  expect(input.messages[1].content).toContain(id === "platform" ? "Proveedores disponibles" : "Disponible para cobrar ahora");
   if (id === "platform") expect(input).toMatchObject({ reasoning_effort: "none", parallel_tool_calls: false, tools: [{ function: { name: "proponer_acuerdo" } }] });
   else expect(input).not.toHaveProperty("tools");
   expect(await backend.service.activity("platform")).toEqual(before);

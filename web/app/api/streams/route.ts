@@ -16,7 +16,9 @@ async function handlePOST(request: Request) {
     requireCondition(typeof payload.start === "number" && typeof payload.end === "number", "start y end deben ser segundos Unix.");
     const items = payload.items.map(value => {
       const item = object(value);
-      return { workerId: textField(item.workerId, "workerId"), totalAmount: normalizeAmount(item.totalAmount), initialDeposit: normalizeAmount(item.initialDeposit) };
+      requireCondition(item.label === undefined || (typeof item.label === "string" && item.label.length <= 80), "label debe ser un texto de hasta 80 caracteres.");
+      return { workerId: textField(item.workerId, "workerId"), totalAmount: normalizeAmount(item.totalAmount), initialDeposit: normalizeAmount(item.initialDeposit),
+        ...(typeof item.label === "string" && item.label.trim() ? { label: item.label } : {}) };
     });
     return service.create({ payerId, items, start: payload.start, end: payload.end }, userId(request, payload, payerId));
   }, 201);
