@@ -6,6 +6,7 @@
 4. Ejecutar checks y ensayo de la UI en mock; registrar resultados y límites.
 5. Publicar la rama, esperar CI/Preview, integrar #5 y verificar Production protegida.
 6. Informar pendientes operativos: seed con horario nuevo, Belo, Anthropic, publicación del repo y ensayo en dispositivos.
+7. Corrección detectada en Production: habilitar recarga del pago completado con fondeo pendiente, validar build y verificar el control sobre el stream real sin enviar fondos.
 
 ## Verificación previa al merge de #5
 
