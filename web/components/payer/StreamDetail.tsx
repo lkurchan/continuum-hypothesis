@@ -69,7 +69,7 @@ export function StreamDetail({ stream, workerName, now }: { stream: StreamView; 
         <span className="text-[13px] text-muted">Ganado</span>
         <span className="tnum text-[34px] font-medium leading-none tracking-[-0.045em]">{money(vested, 2)}</span>
         <span className="tnum text-[13px] text-subtle">
-          de {money(total)}{status === "streaming" ? ` · ${money(ratePerSecond(stream), 4)}/seg` : ""}
+          de {money(total)}{status === "streaming" ? ` · ${money(ratePerSecond(stream), ratePerSecond(stream) < 1 ? 4 : 2)}/seg` : ""}
         </span>
       </div>
       <StreamLine earned={vested / total} funded={deposited / total} live={status === "streaming"} />
