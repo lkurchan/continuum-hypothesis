@@ -71,7 +71,7 @@ Signup real, KYC, off-ramp propio (para eso está Belo), rendimiento de cualquie
 | Wallets | **Custodiales**: usuarios demo fijos, con una clave privada por usuario en variables de entorno. Cada wallet necesita algo de ETH en Arbitrum para gas |
 | Auth | Selector de usuario demo ("Entrar como…"), sin signup |
 | Base | **Supabase** (Postgres): usuarios, metadata de streams, actividad y reglas del agente |
-| IA | Claude vía **Vercel AI SDK** (tool calling). Hace falta una API key de Anthropic |
+| IA | Claude (`claude-opus-5-5`, effort `low`) vía el **SDK oficial de Anthropic** (`@anthropic-ai/sdk`) con streaming. Por ahora es un chat sin herramientas: el servidor le pasa los saldos ya calculados. Hace falta `ANTHROPIC_API_KEY` |
 | Deploy | Vercel |
 | Dev local | `anvil --fork-url <arbitrum RPC>` con `deal` de ARGt, o `MockERC20` si `deal` falla con el proxy |
 
@@ -212,7 +212,7 @@ La base local, Supabase remoto y el backend real en Vercel están validados. El 
 ### Módulo A — Contrato (`contracts/`)
 - [x] A1. `ContinuumStreams.sol` con TDD: vesting, withdrawable, top-up, cancel, lote y permisos.
 - [x] A2. Fork test contra ARGt real en Arbitrum: crear y retirar.
-- [ ] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**. Publicar la dirección en el canal del equipo.
+- [x] A3. Script de deploy, deploy en Arbitrum One y **verificación en Arbiscan**: `ContinuumStreams` figura con Source Code Verified / Exact Match en `0xB98D30CC1e8D234A6234569848366fE30F3fF799`; dirección disponible en README.
 - [x] A4. Exportar el ABI a `web/lib/chain/abi.ts`, el único archivo de `web/` que toca este módulo.
 - [x] A5. Integración con B y primer seed real por API comprobados en B6. Renovar el horario del lote para el ensayo/pitch.
 
@@ -227,18 +227,19 @@ La base local, Supabase remoto y el backend real en Vercel están validados. El 
 B1–B6 están implementados y verificados. El contrato está desplegado y se contrastó su bytecode. B6 ejecutó el flujo real por API con Supabase: depositó 2,2 ARGt, retiró 0,3 ARGt a worker1 y devolvió 0,9 ARGt al pagador; quedó 1 ARGt en el stream 2. Receipts, balances e historial por participante comprobados. El backend real también pasó las lecturas desde Vercel protegido, sin nuevos pagos. Ver `docs/B6.md`, `docs/VERCEL.md`, `docs/OPERATIONS.md`, `docs/BACKEND.md` y `docs/CI.md`. El destino Belo sigue pendiente.
 
 ### Módulo C — UI del pagador (`web/app/(payer)/**`, `web/components/payer/**`, y `web/components/ui/**` como dueño del design system)
-- [ ] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
-- [ ] C2. Selector de usuario demo (pantalla de entrada).
-- [ ] C3. Dashboard del pagador: trabajadores, streams activos, total fondeado y devengado.
-- [ ] C4. Flujo "pagar a N trabajadores": crear en lote con fondeo inicial parcial.
-- [ ] C5. Acciones por stream (top-up y cancelar) con feedback de la transacción y link a Arbiscan.
+- [x] C1. Aplicar el design system que llega de Claude Design en `components/ui`.
+- [x] C2. Selector de usuario demo (pantalla de entrada).
+- [x] C3. Dashboard del pagador: trabajadores, streams activos, total fondeado y devengado.
+- [x] C4. Flujo "pagar a N trabajadores": crear en lote con fondeo inicial parcial.
+- [x] C5. Acciones por stream (top-up y cancelar) con feedback de la transacción y link a Arbiscan.
 
 ### Módulo D — UI del trabajador y agente (`web/app/(worker)/**`, `web/components/worker/**`, `web/lib/agent/**`, `web/app/api/agent/**`)
-- [ ] D0. Layout propio de `(worker)` siguiendo las reglas de 6.1, más la PWA liviana (`app/manifest.ts` y los íconos del diseño). Verificar que se instala en Android y en iPhone y que abre a pantalla completa en `/worker`.
-- [ ] D1. Home del trabajador con **el contador en tiempo real como protagonista**, usando `vestedAt` cada frame o cada 100 ms.
-- [ ] D2. Flujo de retiro: monto, destino (wallet o Belo), confirmación, hash y link a Arbiscan.
-- [ ] D3. Historial de actividad.
-- [ ] D4 (prioridad baja). Agente con el AI SDK y herramientas `getBalance`, `withdrawTo` y `createRule`. Las reglas se guardan en `agent_rules` y se ejecutan con un botón "Ejecutar reglas de hoy" (sin cron), con una explicación por cada movimiento.
+- [ ] D0. Layout propio de `(worker)` siguiendo las reglas de 6.1, más la PWA liviana (`app/manifest.ts` y los íconos del diseño). Verificar que se instala en Android y en iPhone y que abre a pantalla completa en `/worker`. Layout, navegación y manifest listos; falta verificar la instalación en celulares reales y los íconos PNG.
+- [x] D1. Home del trabajador con **el contador en tiempo real como protagonista**, usando `vestedAt` cada frame o cada 100 ms.
+- [x] D2. Flujo de retiro: monto, destino (wallet o Belo), confirmación, hash y link a Arbiscan.
+- [x] D3. Historial de actividad.
+- [x] D4a. Copiloto como chat (`/worker/copiloto` y `POST /api/agent/chat`): responde con los saldos del trabajador, no mueve plata.
+- [ ] D4b (prioridad baja). Reglas que ejecutan pagos con `withdrawTo` (`agent_rules`, botón "Ejecutar reglas de hoy") y una explicación por cada movimiento.
 
 ### Codex 1 y 2
 - [x] README con lo que exige Twin: token, chain, direcciones del contrato y de ARGt, hashes con links, arquitectura, cómo correrlo, qué se hizo durante el evento y aviso de que ARGt no rinde.

@@ -22,3 +22,10 @@ export function getBackend(): Backend {
   }
   return shared.continuumBackend;
 }
+
+/** Lab helper: discards the in-memory demo so the next request reseeds it. No-op outside mock. */
+export function resetMockBackend(): boolean {
+  if ((process.env.CHAIN_MODE ?? "mock") !== "mock") return false;
+  shared.continuumBackend = undefined;
+  return true;
+}
