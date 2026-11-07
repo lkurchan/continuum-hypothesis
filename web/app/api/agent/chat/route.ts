@@ -59,7 +59,8 @@ export async function POST(request: Request) {
             { role: "system", content: `Datos de la cuenta (calculados por Continuum, confiables):\n\n${snapshot}` },
             ...messages,
           ],
-          ...(isPayer ? { tools: [PROPOSAL_TOOL], parallel_tool_calls: false } : {}),
+          // Reasoning models reject function tools on Chat Completions unless reasoning is off.
+          ...(isPayer ? { tools: [PROPOSAL_TOOL], parallel_tool_calls: false, reasoning_effort: "none" as const } : {}),
         });
         let toolArgs = "";
         let wrote = false;
@@ -70,12 +71,13 @@ export async function POST(request: Request) {
         }
         if (!toolArgs) return;
         try {
-          const proposal = toProposal(users, JSON.parse(toolArgs));
+          const proposal = toProposal(users, JSON.parse(toolArgs), messages.filter((m) => m.role === "user").map((m) => m.content).join("\n"));
           if (!wrote) write("Te armé la propuesta. Revisala y confirmala abajo.");
           // ponytail: in-band separator instead of an event protocol; the model never emits U+001E.
           write(PROPOSAL_SEPARATOR + JSON.stringify(proposal));
         } catch (error) {
-          write(`${wrote ? "\n\n" : ""}No pude armar la propuesta: ${error instanceof SyntaxError ? "la respuesta vino incompleta" : (error as Error).message} Probá reformular el pedido.`);
+          const reason = error instanceof SyntaxError ? "la respuesta vino incompleta." : (error as Error).message;
+          if (!wrote || !reason.endsWith("?")) write(`${wrote ? "\n\n" : ""}${reason.endsWith("?") ? reason : `No pude armar la propuesta: ${reason} Probá reformular el pedido.`}`);
         }
       } catch (error) {
         const busy = error instanceof OpenAI.RateLimitError || (error instanceof OpenAI.APIError && (error.status ?? 0) >= 500);
