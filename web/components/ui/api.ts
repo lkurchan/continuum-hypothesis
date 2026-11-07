@@ -1,4 +1,5 @@
 import type { Activity, Amount, DemoUser, StreamView } from "@/lib/domain/types";
+import { redirectToLogin } from "@/lib/auth/client";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -7,6 +8,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     headers: init?.body ? { "Content-Type": "application/json" } : undefined,
   });
   const data = await response.json().catch(() => ({}));
+  if (response.status === 401) redirectToLogin();
   if (!response.ok) throw new Error((data as { error?: string }).error ?? "No se pudo completar la operación.");
   return data as T;
 }
