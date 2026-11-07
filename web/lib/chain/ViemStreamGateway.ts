@@ -34,6 +34,10 @@ function providerError(error: unknown): never {
   if (error instanceof BaseError) {
     const revert = error.walk(cause => cause instanceof ContractFunctionRevertedError);
     if (revert instanceof ContractFunctionRevertedError) {
+      if (revert.data?.errorName === "StreamNotFound") throw new DomainError("Stream inexistente.", 404);
+      if (revert.data?.errorName === "NotPayer" || revert.data?.errorName === "NotRecipient") {
+        throw new DomainError("La wallet no tiene permiso para operar este stream.", 403);
+      }
       throw new DomainError("El contrato rechazó la operación. Revisá permisos, saldo y estado del stream.", 409);
     }
   }

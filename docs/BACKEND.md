@@ -69,6 +69,21 @@ npm run typecheck --prefix web
 npm run build --prefix web
 ```
 
-Los tests cubren precisión, límites, roles, lotes atómicos, cancelaciones, concurrencia local, todas las rutas, aislamiento de actividad, errores de persistencia, aprobaciones, firma con la wallet correcta, receipts y eventos. Supabase se prueba con transporte HTTP simulado; el gateway real con clientes simulados, sin secretos ni transacciones reales. Las migraciones se validaron en PostgreSQL temporal, incluyendo rollback y permisos del RPC.
+Los 56 tests habituales cubren precisión, límites, roles, lotes atómicos, cancelaciones, concurrencia local, todas las rutas, aislamiento de actividad, errores de persistencia, aprobaciones, firma con la wallet correcta, receipts y eventos. Supabase se prueba con transporte HTTP simulado. Las migraciones se validaron en PostgreSQL temporal, incluyendo rollback y permisos del RPC.
+
+Además, el gateway se verificó con firmas y receipts contra el contrato de la rama A (`4f63150`) en Anvil local: crear, aprobar, fondear, retirar, cancelar y retirar el remanente. Se comparó el vesting del dominio con el contrato y se verificó el error de stream inexistente. Se usaron wallets efímeras y un token de prueba, sin mainnet ni fondos reales.
+
+Después de integrar el módulo A, esta prueba opcional puede repetirse compilando sus artefactos y levantando un Anvil descartable:
+
+```bash
+# Desde la raíz, compilar el contrato y MockERC20 de A:
+forge build --root contracts
+# En una terminal separada:
+anvil --host 127.0.0.1 --port 8547 --chain-id 42161 --accounts 0
+# Desde la raíz, contra ese Anvil:
+LOCAL_CHAIN_RPC_URL=http://127.0.0.1:8547 npm test --prefix web -- lib/chain/ViemStreamGateway.integration.test.ts
+```
+
+La prueba solo acepta RPC loopback, restaura un snapshot al terminar y se omite en `npm test` si falta `LOCAL_CHAIN_RPC_URL`. `CONTINUUM_TEST_ARTIFACTS` permite indicar otra carpeta de artefactos compilados para comprobar una copia temporal del módulo A.
 
 Pendiente B6: desplegar/integrar el contrato de A, aplicar migraciones remotas, configurar claves y fondos, y completar el primer flujo real con hash verificable. La UI y el agente siguen en sus módulos correspondientes.
